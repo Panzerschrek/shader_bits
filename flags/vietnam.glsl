@@ -8,7 +8,7 @@ float Star( vec2 coord, float delta )
 	coord.x= abs(coord.x);
 
 	const float c_upper_point_y= 1.0;
-	const float c_lower_point_y=  -sin(22.5 * c_deg_to_rad);
+	const float c_lower_point_y= -sin(18.0 * c_deg_to_rad) / cos(36.0 * c_deg_to_rad);
 	const float c_middle_point_y= -c_lower_point_y * sin( 54.0 * c_deg_to_rad );
 	const float tan72= tan( 72.0 * c_deg_to_rad );
 	const float tan36= tan( 36.0 * c_deg_to_rad );
