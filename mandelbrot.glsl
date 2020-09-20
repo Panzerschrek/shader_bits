@@ -5,10 +5,18 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	for( int dx= 0; dx < c_ss_size; ++dx )
 	for( int dy= 0; dy < c_ss_size; ++dy )
 	{
-		vec2 num= ( fragCoord.xy + vec2(dx, dy) / float(c_ss_size) ) / ( 0.5 * iResolution.xy ) - vec2( 1.0, 1.0 );
+		float angle= iTime * 0.1;
+		float scale= exp(-iTime * 0.1);
+		float ts= sin(angle);
+		float tc= cos(angle);
+		vec2 num= ( fragCoord.xy + vec2(dx, dy) / float(c_ss_size) ) / ( 0.5 * iResolution.xy );
+		num-= vec2( 1.0, 1.0 );
 		num.x*= iResolution.x / iResolution.y;
+		num*= mat2(tc, -ts, ts, tc);
+		num*= scale;
+		num+= vec2( -0.7076599, 0.3527965 );;
 
-		const int c_iterations= 128;
+		const int c_iterations= 256;
 		float c= 1.0;
 		if(dot(num, num) <= 4.0)
 		{
