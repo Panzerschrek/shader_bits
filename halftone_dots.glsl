@@ -1,8 +1,3 @@
-float GetBrightness( vec4 color )
-{
-	// TODO - perform gamma correction (if needed)
-	return dot( color.rgb, vec3( 0.299, 0.587, 0.114 ) );
-}
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
@@ -10,28 +5,28 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	vec2 tex_coord = fragCoord / iResolution.xy;
 	tex_coord.x *= iResolution.x / iResolution.y;
 
-	const float dot_scale= 64.0;
-	vec2 pattern_coord= fract( tex_coord * dot_scale );
-
-	vec2 tex_coord_discret= floor( tex_coord * dot_scale ) / dot_scale;
+	const float dot_scale= 96.0;
+	float d= dot_scale / iResolution.y;
 
 	float lod= log2( max( tex_size.x, tex_size.y ) / dot_scale );
-	float b00 = GetBrightness( textureLod( iChannel0, tex_coord_discret + vec2( 0.0, 0.0 ) / dot_scale, lod ) );
-	float b10 = GetBrightness( textureLod( iChannel0, tex_coord_discret + vec2( 1.0, 0.0 ) / dot_scale, lod ) );
-	float b01 = GetBrightness( textureLod( iChannel0, tex_coord_discret + vec2( 0.0, 1.0 ) / dot_scale, lod ) );
-	float b11 = GetBrightness( textureLod( iChannel0, tex_coord_discret + vec2( 1.0, 1.0 ) / dot_scale, lod ) );
+	vec4 tex_value= textureLod( iChannel0, tex_coord, lod );
+	vec3 cmy= vec3( 1.0 - tex_value.r, 1.0 - tex_value.g, 1.0 - tex_value.b );
+		
+	vec2 pattern_coord_r= fract( tex_coord * dot_scale + vec2( 0.0, 0.25 ) );
+	vec2 pattern_coord_g= fract( tex_coord * dot_scale + vec2( +sqrt(3.0) * 0.125, -0.125 ) );
+	vec2 pattern_coord_b= fract( tex_coord * dot_scale + vec2( -sqrt(3.0) * 0.125, -0.125 ) );
 
-	vec2 v00= pattern_coord.xy;
-	vec2 v10= vec2( 1.0 - pattern_coord.x, pattern_coord.y );
-	vec2 v01= vec2( pattern_coord.x, 1.0 - pattern_coord.y );
-	vec2 v11= vec2( 1.0, 1.0 ) - pattern_coord.xy;
+	vec2 v_r= pattern_coord_r.xy - vec2( 0.5, 0.5 );
+	vec2 v_g= pattern_coord_g.xy - vec2( 0.5, 0.5 );
+	vec2 v_b= pattern_coord_b.xy - vec2( 0.5, 0.5 );
 
-	float factor= 1.0 / 4.0;
-	float a00= step( dot( v00, v00 ), b00 * factor );
-	float a10= step( dot( v10, v10 ), b10 * factor );
-	float a01= step( dot( v01, v01 ), b01 * factor );
-	float a11= step( dot( v11, v11 ), b11 * factor );
+	float radius_r= sqrt(cmy.r / 2.0);
+	float radius_g= sqrt(cmy.g / 2.0);
+	float radius_b= sqrt(cmy.b / 2.0);
 
-	fragColor= vec4( max( max(a00, a01), max(a10, a11) ) );
-	// fragColor= vec4( ( b00 + b10 + b01 + b11 ) / 4.0 );
+	float facror_r= smoothstep( max( radius_r - d, 0.0 ), min( radius_r + d, 1.0 ), length(v_r) );
+	float facror_g= smoothstep( max( radius_g - d, 0.0 ), min( radius_g + d, 1.0 ), length(v_g) );
+	float facror_b= smoothstep( max( radius_b - d, 0.0 ), min( radius_b + d, 1.0 ), length(v_b) );
+
+	fragColor= vec4( facror_r, facror_g, facror_b, 0.0 );
 }
