@@ -4,8 +4,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	vec2 coord= ( fragCoord.xy - iResolution.xy * 0.5 ) * pix_size;
 
 	float b= 0.0;
-	int max_iterations= min( 7, int( 1.0 + iTime * 0.5 ) );
-	float base_width= 0.2 / exp2( float(max_iterations) );
+	int max_iterations= 5;
+	float base_width= 0.25 / exp2( float(max_iterations) );
+	int dist= (1 << (max_iterations * 2)) - 1;
+	float t= 32.0 * iTime;
 	for( int i= 0; i < max_iterations; ++i )
 	{
 		float bar_width= exp2( float(i) ) * base_width;
@@ -18,32 +20,41 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 		float horizontal_bar= step( horizontal_bar_pos - bar_width, coord.y ) * step( coord.y, horizontal_bar_pos + bar_width ) * step( -bar_half_length, coord.x ) * step( coord.x, +bar_half_length );
 
-		float vertical_bar_cut= step( -bar_half_length, coord.y ) * step( coord.y, bar_half_length );
-		float left_bar = step( left_bar_pos  - bar_width, coord.x ) * step( coord.x, left_bar_pos  + bar_width );
-		float right_bar= step( right_bar_pos - bar_width, coord.x ) * step( coord.x, right_bar_pos + bar_width );
+		float vertical_bar_cut= step( -bar_half_length - bar_width, coord.y ) * step( coord.y, bar_half_length + bar_width );
+		float left_bar = vertical_bar_cut * step( left_bar_pos  - bar_width, coord.x ) * step( coord.x, left_bar_pos  + bar_width );
+		float right_bar= vertical_bar_cut * step( right_bar_pos - bar_width, coord.x ) * step( coord.x, right_bar_pos + bar_width );
+ 
+		int half_delta= 1 << (max_iterations * 2 - i * 2 - 2);
+		int delta= half_delta << 1;
+		float dist_horizontal= float(dist);
+		float dist_left = float(dist - delta);
+		float dist_right= float(dist + delta);
 
-		b+= horizontal_bar;
-		b+= left_bar  * vertical_bar_cut;
-		b+= right_bar * vertical_bar_cut;
+		b+= horizontal_bar * step( dist_horizontal, t );
+		b+= left_bar  * step( dist_left , t );
+		b+= right_bar * step( dist_right, t );
 
 		if( coord.x > 0.0 && coord.y > 0.0 )
 		{
 			coord= coord * 2.0 + vec2( -1.0, -1.0 );
-			coord= vec2( -coord.y, +coord.x );
+			coord= vec2( coord.y, +coord.x );
+			dist+= 3 * half_delta;
 		}
 		else if( coord.x < 0.0 && coord.y > 0.0 )
 		{
 			coord= coord * 2.0 + vec2( +1.0, -1.0 );
-			coord= vec2( coord.y, -coord.x );
+			coord= vec2( -coord.y, -coord.x );
+			dist-= 3 * half_delta;
 		}
 		else if( coord.x > 0.0 && coord.y < 0.0 )
 		{
 			coord= coord * 2.0 + vec2( -1.0, +1.0 );
-			coord= vec2( -coord.x, coord.y );
+			dist+= half_delta;
 		}
 		else //if( coord.x < 0.0 && coord.y < 0.0 )
 		{
 			coord= coord * 2.0 + vec2( +1.0, +1.0 );
+			dist-= half_delta;
 		}
 	}
 
