@@ -10,18 +10,19 @@ const float c_first_planet_num= 2.0;
 const float c_last_planet_num= 9.0;
 const float c_num_panets= c_last_planet_num;
 
-const float c_planet_base_radius= 0.005;
-const float c_star_radius= 0.2 / c_num_panets;
+const float c_planet_base_radius= 0.012;
+const float c_star_radius= 0.1;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
 	float pix_size= 2.2 / min(iResolution.x, iResolution.y);
 	vec2 coord= (fragCoord.xy - iResolution.xy * 0.5) * pix_size;
-	float radius= length(coord);
+	float square_radius= dot(coord, coord);
+	float radius= sqrt(square_radius);
 
-	float orbit_number= round(sqrt(radius) * c_num_panets);
-	float orbit_radius= orbit_number * orbit_number / (c_num_panets * c_num_panets);
-	float planet_radius= c_planet_base_radius * orbit_number;
+	float orbit_number= round(square_radius * c_num_panets);
+	float orbit_radius= sqrt(orbit_number / c_num_panets);
+	float planet_radius= c_planet_base_radius / orbit_radius;
 
 	float period= orbit_number;
 
