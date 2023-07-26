@@ -1,0 +1,15 @@
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    const float c_cell_size= 64.0;
+    const float c_wave_amplitude= 16.0;
+    const float c_wave_speed= 2.0;
+    const float c_wave_frequency= 1.0 / 256.0;
+    const float c_two_pi= 2.0 * 3.1415926535;
+    
+    vec2 tc_shift= sin( fragCoord.yx * ( c_wave_frequency * c_two_pi ) + vec2( c_wave_speed ) * iTime );
+    vec2 tex= ( c_wave_amplitude * tc_shift + fragCoord ) / c_cell_size;
+    
+    vec2 tex_smooth= smoothstep( 0.0, 1.0 / c_cell_size, fract( tex ) ) * ( vec2(1.0) - smoothstep( 0.5 , 0.5 + 1.0 / c_cell_size, fract(tex) ) );
+  
+    fragColor = vec4( ( tex_smooth.x + tex_smooth.y ) * 0.5  );
+}
