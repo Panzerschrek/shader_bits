@@ -1,3 +1,8 @@
+/*
+This shader tiles screen with Penrose tiles of type P3: rhombs of two types - with 36 and 54 degree angles.
+Additionaly colored circles are drawn at each tile, so thar result tiling contains patches, composed from segments of these circles.
+*/
+
 // Configuable params
 
 const int ss_scale= 3;
@@ -23,7 +28,6 @@ const float cos18= cos( 18.0 * deg_to_rad );
 const float cos36= cos( 36.0 * deg_to_rad );
 const float sin18= sin( 18.0 * deg_to_rad );
 const float sin36= sin( 36.0 * deg_to_rad );
-const float tan18 = tan(  18.0 * deg_to_rad );
 const float tan36 = tan(  36.0 * deg_to_rad );
 const float tan54 = tan(  54.0 * deg_to_rad );
 const float tan72 = tan(  72.0 * deg_to_rad );
@@ -48,15 +52,18 @@ vec3 calculateColor( vec2 coord )
 		coord.y <= -coord.x * tan36  - sin36 ||
 		coord.y <  -coord.x * tan144 - sin36)
 	{
+		// Reject coordinates outside initial tile.
 		return background_color;
 	}
 
+	// Perform recursive subdivision.
+	// Start with fat tile.
 	bool is_long_tile= false;
 	for( int i= 0; i < num_iterations; ++i )
 	{
 		if( is_long_tile )
 		{
-			coord.x= abs(coord.x); // Long tile subdivision has horisontal symmetry
+			coord.x= abs(coord.x); // Long tile subdivision has horisontal symmetry.
 			if( coord.y <= coord.x * tan54 - sin18 )
 			{
 				coord= transformPoint( coord, vec2( cos18 * 0.5, -sin18 * 0.5), 162.0, golden_ratio );
@@ -67,7 +74,7 @@ vec3 calculateColor( vec2 coord )
 		}
 		else
 		{
-			coord.y= abs(coord.y); // Fat tile subdivision has vertical symmetry
+			coord.y= abs(coord.y); // Fat tile subdivision has vertical symmetry.
 			if( coord.y >= coord.x * tan72 + sin36 )
 			{
 				coord= transformPoint( coord, vec2(-cos36 * 0.5, sin36 * 0.5), 144.0, golden_ratio );
@@ -81,6 +88,8 @@ vec3 calculateColor( vec2 coord )
 				coord= transformPoint( coord, vec2(cos36 - 0.5, 0.0), 180.0, golden_ratio );
 		}
 	}
+
+	// Calculate color, based on current tile type and coordinates inside it.
 
 	const float green_circle_radius= 0.2;
 	const float red_circle_radius_small= 0.2;
