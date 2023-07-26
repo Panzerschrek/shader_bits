@@ -56,57 +56,29 @@ vec3 calculateColor( vec2 coord )
 	{
 		if( is_long_tile )
 		{
-			if( coord.y <= coord.x * tan126 - sin18 )
-			{
-				coord= transformPoint( coord, vec2(-cos18 * 0.5, -sin18 * 0.5),  18.0, golden_ratio );
-				is_long_tile= false;
-			}
-			else if( coord.y <= coord.x * tan54 - sin18 )
+			coord.x= abs(coord.x); // Long tile subdivision has horisontal symmetry
+			if( coord.y <= coord.x * tan54 - sin18 )
 			{
 				coord= transformPoint( coord, vec2( cos18 * 0.5, -sin18 * 0.5), 162.0, golden_ratio );
 				is_long_tile= false;
 			}
-			else if( coord.x <= 0.0 )
-			{
-				coord= transformPoint( coord, vec2(-cos18 * (3.0 - sqrt(5.0)) / 4.0, sin18 - sin18 * (3.0 - sqrt(5.0)) / 4.0 ), -108.0, golden_ratio );
-			}
-			else // if( coord.x >= 0.0 )
-			{
+			else
 				coord= transformPoint( coord, vec2( cos18 * (3.0 - sqrt(5.0)) / 4.0, sin18 - sin18 * (3.0 - sqrt(5.0)) / 4.0 ),  108.0, golden_ratio );
-			}
 		}
 		else
 		{
-			if( coord.y >= 0.0 )
+			coord.y= abs(coord.y); // Fat tile subdivision has vertical symmetry
+			if( coord.y >= coord.x * tan72 + sin36 )
 			{
-				if( coord.y >= coord.x * tan72 + sin36 )
-				{
-					coord= transformPoint( coord, vec2(-cos36 * 0.5, sin36 * 0.5), 144.0, golden_ratio );
-					continue;
-				}
-				if( coord.y > coord.x * tan36 + sin36 / tan72 * tan36 )
-				{
-					coord= transformPoint( coord, vec2( cos36 * 0.5 - 0.25, sin36 * 0.5 + sin36 / (sqrt(5.0) + 1.0)), 126.0, golden_ratio );
-					is_long_tile= true;
-					continue;
-				}
+				coord= transformPoint( coord, vec2(-cos36 * 0.5, sin36 * 0.5), 144.0, golden_ratio );
+			}
+			else if( coord.y > coord.x * tan36 + sin36 / tan72 * tan36 )
+			{
+				coord= transformPoint( coord, vec2( cos36 * 0.5 - 0.25, sin36 * 0.5 + sin36 / (sqrt(5.0) + 1.0)), 126.0, golden_ratio );
+				is_long_tile= true;
 			}
 			else
-			{
-				if( coord.y <= -coord.x * tan72 - sin36 )
-				{
-					coord= transformPoint( coord, vec2(-cos36 * 0.5, -sin36 * 0.5), -144.0, golden_ratio );
-					continue;
-				}
-				if( coord.y <= -coord.x * tan36 - sin36 / tan72 * tan36 )
-				{
-					coord= transformPoint( coord, vec2( cos36 * 0.5 - 0.25, -sin36 * 0.5 - sin36 / (sqrt(5.0) + 1.0)), 54.0, golden_ratio );
-					is_long_tile= true;
-					continue;
-				}
-			}
-
-			coord= transformPoint( coord, vec2(cos36 - 0.5, 0.0), 180.0, golden_ratio );
+				coord= transformPoint( coord, vec2(cos36 - 0.5, 0.0), 180.0, golden_ratio );
 		}
 	}
 
@@ -116,10 +88,7 @@ vec3 calculateColor( vec2 coord )
 
 	if( is_long_tile )
 	{
-		if(	coord.y + border_half_size >=  coord.x * tan18  + sin18 ||
-			coord.y + border_half_size >=  coord.x * tan162 + sin18 ||
-			coord.y - border_half_size <= -coord.x * tan18  - sin18 ||
-			coord.y - border_half_size <= -coord.x * tan162 - sin18)
+		if( abs(coord).y + border_half_size >= abs(coord).x * tan162 + sin18 )
 		{
 			return border_color;
 		}
@@ -138,10 +107,7 @@ vec3 calculateColor( vec2 coord )
 	}
 	else
 	{
-		if(	coord.y + border_half_size >=  coord.x * tan36  + sin36 ||
-			coord.y + border_half_size >=  coord.x * tan144 + sin36 ||
-			coord.y - border_half_size <= -coord.x * tan36  - sin36 ||
-			coord.y - border_half_size <= -coord.x * tan144 - sin36)
+		if( abs(coord).y + border_half_size >= -abs(coord).x * tan36 + sin36 )
 		{
 			return border_color;
 		}
