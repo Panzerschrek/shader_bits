@@ -7,7 +7,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 	mat3 tilt_mat;
 	{
-		float angle= -0.14 * tau;
+		float angle= -0.16 * tau;
 		float angle_s= sin(angle);
 		float angle_c= cos(angle);
 		tilt_mat= mat3(
@@ -41,14 +41,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 	mat3 transform_mat= rot_mat * scale_mat * tilt_mat * fov_mat;
 
-	vec4 c= vec4( 0.0 );
+	vec3 c= vec3( 0.0 );
 	for( int dx= 0; dx < ss_factor; ++dx )
 	for( int dy= 0; dy < ss_factor; ++dy )
 	{
 		vec2 ss_offset= vec2( float(dx), float(dy) ) / float(ss_factor);
 		vec3 coord_screen= vec3( ss_offset + fragCoord.xy - 0.5 * iResolution.xy, 1.0 );
 		vec3 coord_transformed= transform_mat * coord_screen;
-		vec2 coord= coord_transformed.xy / coord_transformed.z + coord_shift;
+		vec2 coord_initial= coord_transformed.xy / coord_transformed.z;
+		vec2 coord= coord_initial + coord_shift;
 		vec2 coord_fract= fract(coord);
 
 		vec2 center_bottom= vec2( 0.5, 0.0 );
@@ -102,9 +103,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 		vec4 tex_color= textureLod( iChannel0, tc_global / 64.0, 0.0 );
 
 		float tex_brightness= dot( tex_color.rgb, vec3( 0.299, 0.587, 0.114 ) );
-		vec3 tex_color_desaturated= mix( vec3( tex_brightness ), tex_color.rgb, 0.3 );
+		vec3 tex_color_desaturated= mix( vec3( tex_brightness ), tex_color.rgb, 0.5 );
 
-		c+= vec4( mix( tex_color_desaturated, vec3( 0.1, 0.1, 0.12 ), mortar_factor ), 1.0 );
+		vec3 plane_color= mix( tex_color_desaturated, vec3( 0.1, 0.1, 0.12 ), mortar_factor );
+
+		vec3 fog_vec= coord_transformed - vec3( 0.0, 0.0, 1.0 );
+		float fog_dist2= dot(fog_vec, fog_vec);
+		float fog_factor= 1.0 - exp( -fog_dist2 / 8.0 );
+
+		c+= mix( plane_color, vec3( 0.7, 0.7, 0.7 ), fog_factor );
 	}
-	fragColor = c / float( ss_factor * ss_factor );
+	fragColor = vec4( c / float( ss_factor * ss_factor ), 1.0 );
 }
