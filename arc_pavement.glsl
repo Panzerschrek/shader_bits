@@ -105,7 +105,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 		float tex_brightness= dot( tex_color.rgb, vec3( 0.299, 0.587, 0.114 ) );
 		vec3 tex_color_desaturated= mix( vec3( tex_brightness ), tex_color.rgb, 0.5 );
 
-		vec3 plane_color= mix( tex_color_desaturated, vec3( 0.1, 0.1, 0.12 ), mortar_factor );
+		vec3 plane_color= 1.5 * mix( tex_color_desaturated, vec3( 0.1, 0.1, 0.12 ), mortar_factor );
 
 		vec3 fog_vec= coord_transformed - vec3( 0.0, 0.0, 1.0 );
 		float fog_dist2= dot(fog_vec, fog_vec);
