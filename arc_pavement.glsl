@@ -101,7 +101,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 		vec2 tc_global= (floor(coord) + grid_offset) * 2.0;
 		vec4 tex_color= textureLod( iChannel0, tc_global / 64.0, 0.0 );
 
-		c+= vec4( mix( tex_color.rgb, vec3( 0.1, 0.1, 0.12 ), mortar_factor ), 1.0 );
+		float tex_brightness= dot( tex_color.rgb, vec3( 0.299, 0.587, 0.114 ) );
+		vec3 tex_color_desaturated= mix( vec3( tex_brightness ), tex_color.rgb, 0.3 );
+
+		c+= vec4( mix( tex_color_desaturated, vec3( 0.1, 0.1, 0.12 ), mortar_factor ), 1.0 );
 	}
 	fragColor = c / float( ss_factor * ss_factor );
 }
