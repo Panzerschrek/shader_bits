@@ -21,6 +21,7 @@ float sdTorus( vec3 p, vec2 t )
 
 float DistanceFunction( vec3 pos )
 {
+    float distant_sphere_radius= 64.0;
     float sphere_radius= 0.5;
     vec3 sphere_center= vec3( 0.0, 0.0, 2.0 );
     vec3 cube_center= vec3( 0.0, 0.3, 2.0 );
@@ -28,12 +29,15 @@ float DistanceFunction( vec3 pos )
     vec3 torus_center= vec3( 0.5, -0.3, 2.0 );
     vec3 torus_subtract_center= vec3( -0.5, 0.52, 2.0 );
     
+    // Inverted sphere representing environment map.
+    float distant_sphere= -sdSphere( pos, distant_sphere_radius );
+    
     float sphere= sdSphere( pos - sphere_center, sphere_radius );
     float box= sdRoundBox( pos - cube_center, cube_size, 0.2 );
     float torus= sdTorus( pos - torus_center, vec2( 0.5, 0.1 ) );
     float torus_subtract= sdTorus( pos - torus_subtract_center, vec2( 0.4, 0.2 ) );
     
-    float additive_res=  min( min( sphere, box ), torus );
+    float additive_res=  min( distant_sphere, min( min( sphere, box ), torus ) );
     
     return max( -torus_subtract, additive_res );
 }
