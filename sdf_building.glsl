@@ -11,6 +11,22 @@ float sdSphere( vec3 p, float s )
   return length(p)-s;
 }
 
+float sdCone( vec3 p, vec2 c, float h )
+{
+  // c is the sin/cos of the angle, h is height
+  // Alternatively pass q instead of (c,h),
+  // which is the point at the base in 2D
+  vec2 q = h*vec2(c.x/c.y,-1.0);
+    
+  vec2 w = vec2( length(p.xz), p.y );
+  vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
+  vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
+  float k = sign( q.y );
+  float d = min(dot( a, a ),dot(b, b));
+  float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
+  return sqrt(d)*sign(s);
+}
+
 float sdBox( vec3 p, vec3 b )
 {
   vec3 q = abs(p) - b;
@@ -78,7 +94,6 @@ float DistanceFunction( vec3 pos )
     const float half_sector_angle_sin= sin(half_sector_angle);
     
     vec3 pos_within_sector= vec3( cos(angle_within_sector) * sector_radius, pos.y, sin(angle_within_sector) * sector_radius );
-        
     
     const float cylinder_height= 128.0;
     const float ground_level= -40.0;
@@ -112,6 +127,10 @@ float DistanceFunction( vec3 pos )
     const vec3 entrance_box0_center= vec3( cylinder_radius, ground_level + entrance_box_half_size.y, +5.0 );
     const vec3 entrance_box1_center= vec3( cylinder_radius, ground_level + entrance_box_half_size.y, -5.0 );
 
+    const float cone_angle= 1.52;
+    const vec3 cone_center= vec3( cylinder_radius - cylinder_walls_half_thikness, window0_center.y + 40.0, 0.0 );
+    const float cone_height= 16.0;
+  
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
     float window0=
@@ -149,7 +168,9 @@ float DistanceFunction( vec3 pos )
     float column_cylinder_body= opUnion( column_cylinder_body0, column_cylinder_body1 );
     float column_cylinder= opIntersection( trimming_cylinder_top, column_cylinder_body );
     
-    float additive_res= opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, trimming_cylinder ) ) );
+    float cone= sdCone( pos_within_sector - cone_center, vec2( cos(cone_angle), sin(cone_angle) ), cone_height );
+    
+    float additive_res= opUnion( opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, trimming_cylinder ) ) ), cone );
     
     return opSubtraction( additive_res, opUnion( opUnion( window0, window1 ),opUnion( window2, entrance_box ) ) );
 }
