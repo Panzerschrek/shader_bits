@@ -29,19 +29,26 @@ float sdVerticalInfiniteCycilder( vec3 p, float r )
     return length( p.xz ) - r;
 }
 
+float sdVerticalInfiniteHollowCycilder( vec3 p, float base_radius, float walls_half_thikness )
+{
+    float l= length( p.xz );
+    return abs( l - base_radius ) - walls_half_thikness;
+}
+
 float DistanceFunction( vec3 pos )
 {
     const float cylinder_height= 128.0;
     float ground_level= -0.5 * cylinder_height;
     float sphere_radius= 50.0;
     const float cylinder_radius= 128.0;
-    vec3 sphere_center= vec3( 0.0, 40.0, 0.0 );
+    const float cylinder_walls_half_thikness= 8.0;
+    vec3 sphere_center= vec3( 0.0, 40.0, cylinder_radius );
     
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
     float sphere= sdSphere( pos - sphere_center, sphere_radius );
     
-    float cylinder_body= sdVerticalInfiniteCycilder( pos, cylinder_radius );
+    float cylinder_body= sdVerticalInfiniteHollowCycilder( pos, cylinder_radius - cylinder_walls_half_thikness, cylinder_walls_half_thikness );
     float cylinder_top= sdHorizontalPlane( pos, ground_level + cylinder_height );
     float cylinder= max( cylinder_top, cylinder_body );
     
