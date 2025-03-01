@@ -31,15 +31,12 @@ float sdVerticalInfiniteCycilder( vec3 p, float r )
 
 float DistanceFunction( vec3 pos )
 {
-    float distant_sphere_radius= 1024.0;
     const float cylinder_height= 128.0;
     float ground_level= -0.5 * cylinder_height;
     float sphere_radius= 50.0;
     const float cylinder_radius= 128.0;
     vec3 sphere_center= vec3( 0.0, 40.0, 0.0 );
     
-    // Inverted sphere representing environment map.
-    float sky_sphere= -sdSphere( pos, distant_sphere_radius );
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
     float sphere= sdSphere( pos - sphere_center, sphere_radius );
@@ -63,7 +60,7 @@ mat3 CalculateRotationMatrix()
         vec3(0.0, tilt_angle_cos, -tilt_angle_sin),
         vec3(0.0, tilt_angle_sin, tilt_angle_cos));
         
-    float rot_angle= 0.7 * iTime;
+    float rot_angle= 0.2 * iTime;
     float c= cos(rot_angle);
     float s= sin(rot_angle);
 
@@ -77,7 +74,7 @@ mat3 CalculateRotationMatrix()
 
 vec3 TextureFetch3d( vec3 coord, float smooth_size )
 {
-	vec3 tc_mod= abs( fract( coord * 6.0 ) - vec3( 0.5, 0.5, 0.5 ) );
+	vec3 tc_mod= abs( fract( coord ) - vec3( 0.5, 0.5, 0.5 ) );
 	vec3 tc_step= smoothstep( 0.25 - smooth_size, 0.25 + smooth_size, tc_mod );
 
 	float bit= abs( abs( tc_step.x - tc_step.y ) - tc_step.z );
@@ -111,6 +108,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         }
         pos+= dir_normalized * max(g_min_marching_step, dist);
     }
+    
+    const vec3 sky_color= vec3( 0.7, 0.7, 0.9 );
 
     if(hit)
     {
@@ -142,12 +141,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             sun_factor= 0.0;
             
         const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
-        const vec3 sky_color= vec3( 0.7, 0.7, 0.9 );
+        
+        const float coord_scale= 1.0 / 16.0;
             
-        float smooth_size= length( pos - cam_pos ) * pix_size * 0.1;
+        float smooth_size= pix_size * coord_scale * length( pos - cam_pos ) / max( 0.01, abs(dot(dir_normalized, normal)) );
 
-        fragColor= vec4( TextureFetch3d(pos  / 64.0, smooth_size) * ( sun_factor * sun_color + sky_color ), 0.0 );
+        fragColor= vec4( TextureFetch3d(pos * coord_scale, smooth_size) * ( sun_factor * sun_color + sky_color ), 0.0 );
     }
     else
-        fragColor= vec4( 0.0, 0.0, 0.0, 0.0 );
+        fragColor= vec4( sky_color, 0.0 );
 }
