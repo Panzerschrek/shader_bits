@@ -63,10 +63,13 @@ float DistanceFunction( vec3 pos )
     const float window_radius= 14.0;
     const float cylinder_radius= 128.0;
     const float cylinder_walls_half_thikness= 6.0;
+    const float floor_cylinder_walls_half_thikness= 9.0;
     const vec3 window_center= vec3( 0.0, 35.0, 0.0 );
     const float window_box_half_height= 10.0;
     const float window_box_half_depth= cylinder_walls_half_thikness * 4.0;
     const vec3 window_box_center= vec3( cylinder_radius, window_center.y - window_box_half_height, 0.0 );
+    const float floor_cylinder_start_height= window_center.y + window_radius + 2.0;
+    const float floor_cylinder_end_height= floor_cylinder_start_height + 4.0;
     
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
@@ -78,7 +81,11 @@ float DistanceFunction( vec3 pos )
     float cylinder_top= sdHorizontalPlane( pos, ground_level + cylinder_height );
     float cylinder= max( cylinder_top, cylinder_body );
     
-    float additive_res= min( ground_plane, cylinder );
+    float floor_cylinder_body= sdYInfiniteHollowCylinder( pos, cylinder_radius - cylinder_walls_half_thikness, floor_cylinder_walls_half_thikness );
+    float floor_cylinder_borders= max( -sdHorizontalPlane( pos, floor_cylinder_start_height ), sdHorizontalPlane( pos, floor_cylinder_end_height ) );
+    float floor_cylinder= max( floor_cylinder_body, floor_cylinder_borders );
+    
+    float additive_res= min( ground_plane, min( cylinder, floor_cylinder ) );
     
     return max( additive_res, -window );
 }
