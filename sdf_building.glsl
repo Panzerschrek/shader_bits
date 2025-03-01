@@ -9,6 +9,12 @@ float sdSphere( vec3 p, float s )
   return length(p)-s;
 }
 
+float sdBox( vec3 p, vec3 b )
+{
+  vec3 q = abs(p) - b;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+
 float sdRoundBox( vec3 p, vec3 b, float r )
 {
   vec3 q = abs(p) - b + r;
@@ -26,12 +32,17 @@ float sdHorizontalPlane( vec3 p, float level )
     return p.y - level;
 }
 
-float sdVerticalInfiniteCycilder( vec3 p, float r )
+float sdYInfiniteCylinder( vec3 p, float r )
 {
     return length( p.xz ) - r;
 }
 
-float sdVerticalInfiniteHollowCycilder( vec3 p, float base_radius, float walls_half_thikness )
+float sdXInfiniteCylinder( vec3 p, float r )
+{
+    return length( p.yz ) - r;
+}
+
+float sdYInfiniteHollowCylinder( vec3 p, float base_radius, float walls_half_thikness )
 {
     float l= length( p.xz );
     return abs( l - base_radius ) - walls_half_thikness;
@@ -39,7 +50,7 @@ float sdVerticalInfiniteHollowCycilder( vec3 p, float base_radius, float walls_h
 
 float DistanceFunction( vec3 pos )
 {
-    const int num_sectors= 16;
+    const int num_sectors= 20;
     const float sector_scale = g_two_pi / float(num_sectors);
     float sector_radius= length( pos.xz );
     // From -0.5 to 0.5
@@ -48,23 +59,28 @@ float DistanceFunction( vec3 pos )
     vec3 pos_within_sector= vec3( cos(angle_within_sector) * sector_radius, pos.y, sin(angle_within_sector) * sector_radius );
         
     const float cylinder_height= 128.0;
-    float ground_level= -0.5 * cylinder_height;
-    float sphere_radius= 20.0;
+    const float ground_level= -0.5 * cylinder_height;
+    const float window_radius= 14.0;
     const float cylinder_radius= 128.0;
-    const float cylinder_walls_half_thikness= 8.0;
-    vec3 sphere_center= vec3( cylinder_radius, 35.0, 0.0 );
+    const float cylinder_walls_half_thikness= 6.0;
+    const vec3 window_center= vec3( 0.0, 35.0, 0.0 );
+    const float window_box_half_height= 10.0;
+    const float window_box_half_depth= cylinder_walls_half_thikness * 4.0;
+    const vec3 window_box_center= vec3( cylinder_radius, window_center.y - window_box_half_height, 0.0 );
     
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
-    float sphere= sdSphere( pos_within_sector - sphere_center, sphere_radius );
+    float window_round= sdXInfiniteCylinder( pos_within_sector - window_center, window_radius );
+    float window_box= sdBox( pos_within_sector - window_box_center, vec3( window_box_half_depth, window_box_half_height, window_radius ) );
+    float window= min( window_round, window_box);
     
-    float cylinder_body= sdVerticalInfiniteHollowCycilder( pos, cylinder_radius - cylinder_walls_half_thikness, cylinder_walls_half_thikness );
+    float cylinder_body= sdYInfiniteHollowCylinder( pos, cylinder_radius - cylinder_walls_half_thikness, cylinder_walls_half_thikness );
     float cylinder_top= sdHorizontalPlane( pos, ground_level + cylinder_height );
     float cylinder= max( cylinder_top, cylinder_body );
     
     float additive_res= min( ground_plane, cylinder );
     
-    return max( additive_res, -sphere );
+    return max( additive_res, -window );
 }
 
 mat3 CalculateRotationMatrix()
