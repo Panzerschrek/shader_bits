@@ -1,8 +1,8 @@
 const float g_two_pi= 2.0 * 3.1415926535;
 
-const float g_min_marching_step= 0.02;
-const int g_max_marcging_iterations= 256;
-const float g_derivative_calculation_delta= 0.01;
+const float g_min_marching_step= 0.08;
+const int g_max_marcging_iterations= 128;
+const float g_derivative_calculation_delta= 0.02;
 
 float sdSphere( vec3 p, float s )
 {
