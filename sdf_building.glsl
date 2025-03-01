@@ -132,6 +132,9 @@ float DistanceFunction( vec3 pos )
     const float roof_cone_height= 16.0;
     const vec3 roof_cone_sphere_center= roof_cone_center - vec3( 0.0, 10.0, 0.0 );
     const float roof_cone_sphere_radius= 1.5;
+    
+    const vec3 entrance_torus_center= vec3( cylinder_radius + 20.0, -40.0, 0.0 );
+    const vec2 entrance_torus_size= vec2( 20.0, 3.0 );
   
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
@@ -176,7 +179,14 @@ float DistanceFunction( vec3 pos )
     
     float additive_res= opUnion( opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, trimming_cylinder ) ) ), roof_cone_total );
     
-    return opSubtraction( additive_res, opUnion( opUnion( window0, window1 ),opUnion( window2, entrance_box ) ) );
+    float building= opSubtraction( additive_res, opUnion( opUnion( window0, window1 ),opUnion( window2, entrance_box ) ) );
+    
+    float entrance_torus= 
+        opUnion(
+            sdTorus( ( vec3( abs(pos.x), pos.y, pos.z ) - entrance_torus_center ).yxz, entrance_torus_size ),
+            sdTorus( ( vec3( abs(pos.z), pos.y, pos.x ) - entrance_torus_center ).yxz, entrance_torus_size ) );
+
+    return opUnion( building, entrance_torus );
 }
 
 mat3 CalculateRotationMatrix()
@@ -218,7 +228,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     vec3 dir_normalized= normalize(vec3(coord, 1.5));
 
-    vec3 cam_pos= vec3(0.0, 0.0, -240.0);
+    vec3 cam_pos= vec3(0.0, 0.0, -250.0);
     
     mat3 rotate_mat= CalculateRotationMatrix();
     dir_normalized= dir_normalized * rotate_mat;
@@ -253,7 +263,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         
         vec3 shadow_pos= pos + 0.1 * normal;
         bool shadow_hit= false;
-        const vec3 sun_dir_normalized= normalize(vec3(1.0, 1.1, 0.3));
+        const vec3 sun_dir_normalized= normalize(vec3(1.0, 1.1, -0.3));
         for( int i= 0; i < g_max_shadow_marching_iterations; ++i )
         {
             float dist= DistanceFunction( shadow_pos );
