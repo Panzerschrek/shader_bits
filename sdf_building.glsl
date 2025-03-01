@@ -84,14 +84,14 @@ float DistanceFunction( vec3 pos )
     const float ground_level= -40.0;
     const float cylinder_radius= 128.0;
     const float cylinder_walls_half_thikness= 6.0;
-    const float floor_cylinder_walls_half_thikness= 9.0;
+    const float trimming_cylinder_walls_half_thikness= 9.0;
     const float window0_radius= 12.0;
     const vec3 window0_center= vec3( 0.0, 64.0, 0.0 );
     const float window0_box_half_height= 8.0;
     const float window0_box_half_depth= cylinder_walls_half_thikness * 4.0;
     const vec3 window0_box_center= vec3( cylinder_radius, window0_center.y - window0_box_half_height, 0.0 );
-    const float floor_cylinder_start_height= window0_center.y + window0_radius + 2.0;
-    const float floor_cylinder_end_height= floor_cylinder_start_height + 4.0;
+    const float trimming_cylinder_start_height= window0_center.y + window0_radius + 2.0;
+    const float trimming_cylinder_end_height= trimming_cylinder_start_height + 4.0;
     const float column_cylinder_radius= 2.0;
     const vec3 column_cylinder_pos0= vec3( cylinder_radius * half_sector_angle_cos, 0.0, +cylinder_radius * half_sector_angle_sin );
     const vec3 column_cylinder_pos1= vec3( cylinder_radius * half_sector_angle_cos, 0.0, -cylinder_radius * half_sector_angle_sin );
@@ -138,16 +138,18 @@ float DistanceFunction( vec3 pos )
     float cylinder_top= sdHorizontalPlane( pos, ground_level + cylinder_height );
     float cylinder= opIntersection( cylinder_top, cylinder_body );
     
-    float floor_cylinder_body= sdYInfiniteHollowCylinder( pos, cylinder_radius - cylinder_walls_half_thikness, floor_cylinder_walls_half_thikness );
-    float floor_cylinder_borders= opIntersection( -sdHorizontalPlane( pos, floor_cylinder_start_height ), sdHorizontalPlane( pos, floor_cylinder_end_height ) );
-    float floor_cylinder= opIntersection( floor_cylinder_body, floor_cylinder_borders );
+    float trimming_cylinder_body= sdYInfiniteHollowCylinder( pos, cylinder_radius - cylinder_walls_half_thikness, trimming_cylinder_walls_half_thikness );
+    float trimming_cylinder_bottom= -sdHorizontalPlane( pos, trimming_cylinder_start_height );
+    float trimming_cylinder_top= sdHorizontalPlane( pos, trimming_cylinder_end_height );
+    float trimming_cylinder_borders= opIntersection( trimming_cylinder_bottom, trimming_cylinder_top );
+    float trimming_cylinder= opIntersection( trimming_cylinder_body, trimming_cylinder_borders );
     
     float column_cylinder_body0= sdYInfiniteCylinder( pos_within_sector - column_cylinder_pos0, column_cylinder_radius );
     float column_cylinder_body1= sdYInfiniteCylinder( pos_within_sector - column_cylinder_pos1, column_cylinder_radius );
     float column_cylinder_body= opUnion( column_cylinder_body0, column_cylinder_body1 );
-    float column_cylinder= opIntersection( cylinder_top, column_cylinder_body );
+    float column_cylinder= opIntersection( trimming_cylinder_top, column_cylinder_body );
     
-    float additive_res= opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, floor_cylinder ) ) );
+    float additive_res= opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, trimming_cylinder ) ) );
     
     return opSubtraction( additive_res, opUnion( opUnion( window0, window1 ),opUnion( window2, entrance_box ) ) );
 }
@@ -244,7 +246,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             
         const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
         
-        const float coord_scale= 1.0 / 16.0;
+        const float coord_scale= 1.0 / 8.0;
             
         float smooth_size= pix_size * coord_scale * length( pos - cam_pos ) / max( 0.01, abs(dot(dir_normalized, normal)) );
 
