@@ -1,6 +1,6 @@
-const float g_min_marching_step= 0.002;
+const float g_min_marching_step= 0.02;
 const int g_max_marcging_iterations= 256;
-const float g_derivative_calculation_delta= 0.001;
+const float g_derivative_calculation_delta= 0.01;
 
 float sdSphere( vec3 p, float s )
 {
@@ -31,10 +31,12 @@ float sdVerticalInfiniteCycilder( vec3 p, float r )
 
 float DistanceFunction( vec3 pos )
 {
-    float distant_sphere_radius= 64.0;
-    float ground_level= -4.0;
-    float sphere_radius= 0.5;
-    vec3 sphere_center= vec3( 0.0, 4.0, 0.0 );
+    float distant_sphere_radius= 1024.0;
+    const float cylinder_height= 128.0;
+    float ground_level= -0.5 * cylinder_height;
+    float sphere_radius= 50.0;
+    const float cylinder_radius= 128.0;
+    vec3 sphere_center= vec3( 0.0, 40.0, 0.0 );
     
     // Inverted sphere representing environment map.
     float sky_sphere= -sdSphere( pos, distant_sphere_radius );
@@ -42,8 +44,8 @@ float DistanceFunction( vec3 pos )
     
     float sphere= sdSphere( pos - sphere_center, sphere_radius );
     
-    float cylinder_body= sdVerticalInfiniteCycilder( pos, 4.0 );
-    float cylinder_top= sdHorizontalPlane( pos, ground_level + 8.0 );
+    float cylinder_body= sdVerticalInfiniteCycilder( pos, cylinder_radius );
+    float cylinder_top= sdHorizontalPlane( pos, ground_level + cylinder_height );
     float cylinder= max( cylinder_top, cylinder_body );
     
     float additive_res= min( min(sky_sphere, ground_plane), cylinder );
@@ -80,7 +82,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     vec3 dir_normalized= normalize(vec3(coord, 1.5));
 
-    vec3 pos= vec3(0.0, 0.0, -10.0);
+    vec3 pos= vec3(0.0, 0.0, -256.0);
     
     mat3 rotate_mat= CalculateRotationMatrix();
     dir_normalized= dir_normalized * rotate_mat;
