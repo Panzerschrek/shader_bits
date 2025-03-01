@@ -48,7 +48,7 @@ float DistanceFunction( vec3 pos )
     float cylinder_top= sdHorizontalPlane( pos, ground_level + cylinder_height );
     float cylinder= max( cylinder_top, cylinder_body );
     
-    float additive_res= min( min(sky_sphere, ground_plane), cylinder );
+    float additive_res= min( ground_plane, cylinder );
     
     return max( additive_res, -sphere );
 }
@@ -75,6 +75,16 @@ mat3 CalculateRotationMatrix()
     return tilt_mat * timed_rotate_mat;
 }
 
+vec3 TextureFetch3d( vec3 coord, float smooth_size )
+{
+	vec3 tc_mod= abs( fract( coord * 6.0 ) - vec3( 0.5, 0.5, 0.5 ) );
+	vec3 tc_step= smoothstep( 0.25 - smooth_size, 0.25 + smooth_size, tc_mod );
+
+	float bit= abs( abs( tc_step.x - tc_step.y ) - tc_step.z );
+	bit= bit * 0.5 + 0.4;
+	return vec3( bit, bit, bit );
+}
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     float pix_size= 2.2 / min(iResolution.x, iResolution.y);
@@ -82,11 +92,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     vec3 dir_normalized= normalize(vec3(coord, 1.5));
 
-    vec3 pos= vec3(0.0, 0.0, -256.0);
+    vec3 cam_pos= vec3(0.0, 0.0, -256.0);
     
     mat3 rotate_mat= CalculateRotationMatrix();
     dir_normalized= dir_normalized * rotate_mat;
-    pos= pos * rotate_mat;
+    cam_pos= cam_pos * rotate_mat;
+    
+    vec3 pos = cam_pos;
     
     bool hit= false;
     for( int i= 0; i < g_max_marcging_iterations; ++i )
@@ -110,8 +122,28 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             DistanceFunction( pos + g_derivative_calculation_delta * vec3(0.0, 0.0, 1.0 ) ) -
             DistanceFunction( pos - g_derivative_calculation_delta * vec3(0.0, 0.0, 1.0) ) );
         normal= normalize(normal);
+        
+        vec3 shadow_pos= pos + 0.1 * normal;
+        bool shadow_hit= false;
+        const vec3 sun_dir_normalized= normalize(vec3(1.0, 0.5, 0.3));
+        for( int i= 0; i < g_max_marcging_iterations; ++i )
+        {
+            float dist= DistanceFunction( shadow_pos );
+            if( dist <= 0.0 )
+            {
+                shadow_hit= true;
+                break;
+            }
+            shadow_pos+= sun_dir_normalized * max(g_min_marching_step, dist);
+        }
+        
+        float sun_factor= max(0.0, dot(normal, sun_dir_normalized));
+        if(shadow_hit)
+            sun_factor= 0.0;
+            
+         float smooth_size= length( pos - cam_pos ) * pix_size * 0.1;
 
-        fragColor= vec4( normal * 0.5 + vec3(0.5, 0.5, 0.5), 0.0 );
+        fragColor= vec4( (TextureFetch3d(pos  / 64.0, smooth_size) + vec3(0.5, 0.5, 0.5)) * ( sun_factor * 0.6 + 0.4), 0.0 );
     }
     else
         fragColor= vec4( 0.0, 0.0, 0.0, 0.0 );
