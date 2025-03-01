@@ -24,29 +24,31 @@ float sdHorizontalPlane( vec3 p, float level )
     return p.y - level;
 }
 
+float sdVerticalInfiniteCycilder( vec3 p, float r )
+{
+    return length( p.xz ) - r;
+}
+
 float DistanceFunction( vec3 pos )
 {
     float distant_sphere_radius= 64.0;
     float ground_level= -4.0;
     float sphere_radius= 0.5;
-    vec3 sphere_center= vec3( 0.0, 2.0, 0.0 );
-    vec3 cube_center= vec3( 0.0, 2.3, 0.0 );
-    vec3 cube_size= vec3( 0.6, 0.4, 0.3 );
-    vec3 torus_center= vec3( 0.5, 1.7, 0.0 );
-    vec3 torus_subtract_center= vec3( -0.5, 2.52, 0.0 );
+    vec3 sphere_center= vec3( 0.0, 4.0, 0.0 );
     
     // Inverted sphere representing environment map.
     float sky_sphere= -sdSphere( pos, distant_sphere_radius );
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
     float sphere= sdSphere( pos - sphere_center, sphere_radius );
-    float box= sdRoundBox( pos - cube_center, cube_size, 0.2 );
-    float torus= sdTorus( pos - torus_center, vec2( 0.5, 0.1 ) );
-    float torus_subtract= sdTorus( pos - torus_subtract_center, vec2( 0.4, 0.2 ) );
     
-    float additive_res=  min( min(sky_sphere, ground_plane), min( min( sphere, box ), torus ) );
+    float cylinder_body= sdVerticalInfiniteCycilder( pos, 4.0 );
+    float cylinder_top= sdHorizontalPlane( pos, ground_level + 8.0 );
+    float cylinder= max( cylinder_top, cylinder_body );
     
-    return max( -torus_subtract, additive_res );
+    float additive_res= min( min(sky_sphere, ground_plane), cylinder );
+    
+    return max( additive_res, -sphere );
 }
 
 mat3 CalculateRotationMatrix()
@@ -78,7 +80,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     vec3 dir_normalized= normalize(vec3(coord, 1.5));
 
-    vec3 pos= vec3(0.0, 0.0, -5.0);
+    vec3 pos= vec3(0.0, 0.0, -10.0);
     
     mat3 rotate_mat= CalculateRotationMatrix();
     dir_normalized= dir_normalized * rotate_mat;
