@@ -1,3 +1,5 @@
+const float g_two_pi= 2.0 * 3.1415926535;
+
 const float g_min_marching_step= 0.02;
 const int g_max_marcging_iterations= 256;
 const float g_derivative_calculation_delta= 0.01;
@@ -37,16 +39,24 @@ float sdVerticalInfiniteHollowCycilder( vec3 p, float base_radius, float walls_h
 
 float DistanceFunction( vec3 pos )
 {
+    const int num_sectors= 16;
+    const float sector_scale = g_two_pi / float(num_sectors);
+    float sector_radius= length( pos.xz );
+    // From -0.5 to 0.5
+    float angle_within_sector= (fract( atan(pos.z, pos.x) / sector_scale ) - 0.5) * sector_scale;
+    
+    vec3 pos_within_sector= vec3( cos(angle_within_sector) * sector_radius, pos.y, sin(angle_within_sector) * sector_radius );
+        
     const float cylinder_height= 128.0;
     float ground_level= -0.5 * cylinder_height;
-    float sphere_radius= 50.0;
+    float sphere_radius= 20.0;
     const float cylinder_radius= 128.0;
     const float cylinder_walls_half_thikness= 8.0;
-    vec3 sphere_center= vec3( 0.0, 40.0, cylinder_radius );
+    vec3 sphere_center= vec3( cylinder_radius, 35.0, 0.0 );
     
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
-    float sphere= sdSphere( pos - sphere_center, sphere_radius );
+    float sphere= sdSphere( pos_within_sector - sphere_center, sphere_radius );
     
     float cylinder_body= sdVerticalInfiniteHollowCycilder( pos, cylinder_radius - cylinder_walls_half_thikness, cylinder_walls_half_thikness );
     float cylinder_top= sdHorizontalPlane( pos, ground_level + cylinder_height );
