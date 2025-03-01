@@ -48,6 +48,21 @@ float sdYInfiniteHollowCylinder( vec3 p, float base_radius, float walls_half_thi
     return abs( l - base_radius ) - walls_half_thikness;
 }
 
+float opUnion( float d1, float d2 )
+{
+    return min(d1, d2);
+}
+
+float opIntersection( float d1, float d2 )
+{
+    return max(d1 ,d2);
+}
+
+float opSubtraction( float d1, float d2 )
+{
+    return opIntersection(d1, -d2);
+}
+
 float DistanceFunction( vec3 pos )
 {
     const int num_sectors= 20;
@@ -78,29 +93,28 @@ float DistanceFunction( vec3 pos )
     const vec3 column_cylinder_pos0= vec3( cylinder_radius * half_sector_angle_cos, 0.0, +cylinder_radius * half_sector_angle_sin );
     const vec3 column_cylinder_pos1= vec3( cylinder_radius * half_sector_angle_cos, 0.0, -cylinder_radius * half_sector_angle_sin );
     
-    
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
     float window_round= sdXInfiniteCylinder( pos_within_sector - window_center, window_radius );
     float window_box= sdBox( pos_within_sector - window_box_center, vec3( window_box_half_depth, window_box_half_height, window_radius ) );
-    float window= min( window_round, window_box);
+    float window= opUnion( window_round, window_box);
     
     float cylinder_body= sdYInfiniteHollowCylinder( pos, cylinder_radius - cylinder_walls_half_thikness, cylinder_walls_half_thikness );
     float cylinder_top= sdHorizontalPlane( pos, ground_level + cylinder_height );
-    float cylinder= max( cylinder_top, cylinder_body );
+    float cylinder= opIntersection( cylinder_top, cylinder_body );
     
     float floor_cylinder_body= sdYInfiniteHollowCylinder( pos, cylinder_radius - cylinder_walls_half_thikness, floor_cylinder_walls_half_thikness );
-    float floor_cylinder_borders= max( -sdHorizontalPlane( pos, floor_cylinder_start_height ), sdHorizontalPlane( pos, floor_cylinder_end_height ) );
-    float floor_cylinder= max( floor_cylinder_body, floor_cylinder_borders );
+    float floor_cylinder_borders= opIntersection( -sdHorizontalPlane( pos, floor_cylinder_start_height ), sdHorizontalPlane( pos, floor_cylinder_end_height ) );
+    float floor_cylinder= opIntersection( floor_cylinder_body, floor_cylinder_borders );
     
     float column_cylinder_body0= sdYInfiniteCylinder( pos_within_sector - column_cylinder_pos0, column_cylinder_radius );
     float column_cylinder_body1= sdYInfiniteCylinder( pos_within_sector - column_cylinder_pos1, column_cylinder_radius );
-    float column_cylinder_body= min( column_cylinder_body0, column_cylinder_body1 );
-    float column_cylinder= max( cylinder_top, column_cylinder_body );
+    float column_cylinder_body= opUnion( column_cylinder_body0, column_cylinder_body1 );
+    float column_cylinder= opIntersection( cylinder_top, column_cylinder_body );
     
-    float additive_res= min( ground_plane, min( column_cylinder, min( cylinder, floor_cylinder ) ) );
+    float additive_res= opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, floor_cylinder ) ) );
     
-    return max( additive_res, -window );
+    return opSubtraction( additive_res, window );
 }
 
 mat3 CalculateRotationMatrix()
