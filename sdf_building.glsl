@@ -1,7 +1,9 @@
 const float g_two_pi= 2.0 * 3.1415926535;
 
 const float g_min_marching_step= 0.08;
-const int g_max_marcging_iterations= 128;
+const int g_max_marching_iterations= 256;
+const float g_min_shadow_marching_step= g_min_marching_step * 2.0;
+const int g_max_shadow_marching_iterations= g_max_marching_iterations / 2;
 const float g_derivative_calculation_delta= 0.02;
 
 float sdSphere( vec3 p, float s )
@@ -198,7 +200,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec3 pos = cam_pos;
     
     bool hit= false;
-    for( int i= 0; i < g_max_marcging_iterations; ++i )
+    for( int i= 0; i < g_max_marching_iterations; ++i )
     {
         float dist= DistanceFunction( pos );
         if( dist <= 0.0 )
@@ -225,7 +227,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         vec3 shadow_pos= pos + 0.1 * normal;
         bool shadow_hit= false;
         const vec3 sun_dir_normalized= normalize(vec3(1.0, 0.5, 0.3));
-        for( int i= 0; i < g_max_marcging_iterations; ++i )
+        for( int i= 0; i < g_max_shadow_marching_iterations; ++i )
         {
             float dist= DistanceFunction( shadow_pos );
             if( dist <= 0.0 )
@@ -233,7 +235,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                 shadow_hit= true;
                 break;
             }
-            shadow_pos+= sun_dir_normalized * max(g_min_marching_step, dist);
+            shadow_pos+= sun_dir_normalized * max(g_min_shadow_marching_step, dist);
         }
         
         float sun_factor= max(0.0, dot(normal, sun_dir_normalized));
