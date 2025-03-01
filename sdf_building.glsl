@@ -265,13 +265,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         if(shadow_hit)
             sun_factor= 0.0;
             
+        float sky_factor= normal.y * 0.35 + 0.65;
+            
         const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
         
         const float coord_scale= 1.0 / 8.0;
             
         float smooth_size= pix_size * coord_scale * length( pos - cam_pos ) / max( 0.01, abs(dot(dir_normalized, normal)) );
 
-        fragColor= vec4( TextureFetch3d(pos * coord_scale, smooth_size) * ( sun_factor * sun_color + sky_color ), 0.0 );
+        fragColor= vec4( TextureFetch3d(pos * coord_scale, smooth_size) * ( sun_factor * sun_color + sky_factor * sky_color ), 0.0 );
     }
     else
         fragColor= vec4( sky_color, 0.0 );
