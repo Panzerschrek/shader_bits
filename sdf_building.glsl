@@ -23,11 +23,11 @@ float DistanceFunction( vec3 pos )
 {
     float distant_sphere_radius= 64.0;
     float sphere_radius= 0.5;
-    vec3 sphere_center= vec3( 0.0, 0.0, 2.0 );
-    vec3 cube_center= vec3( 0.0, 0.3, 2.0 );
+    vec3 sphere_center= vec3( 0.0, 0.0, 0.0 );
+    vec3 cube_center= vec3( 0.0, 0.3, 0.0 );
     vec3 cube_size= vec3( 0.6, 0.4, 0.3 );
-    vec3 torus_center= vec3( 0.5, -0.3, 2.0 );
-    vec3 torus_subtract_center= vec3( -0.5, 0.52, 2.0 );
+    vec3 torus_center= vec3( 0.5, -0.3, 0.0 );
+    vec3 torus_subtract_center= vec3( -0.5, 0.52, 0.0 );
     
     // Inverted sphere representing environment map.
     float distant_sphere= -sdSphere( pos, distant_sphere_radius );
@@ -42,6 +42,28 @@ float DistanceFunction( vec3 pos )
     return max( -torus_subtract, additive_res );
 }
 
+mat3 CalculateRotationMatrix()
+{
+    const float tilt_angle= 0.5;
+    const float tilt_angle_cos= cos(tilt_angle);
+    const float tilt_angle_sin= sin(tilt_angle);
+    const mat3 tilt_mat= mat3(
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, tilt_angle_cos, -tilt_angle_sin),
+        vec3(0.0, tilt_angle_sin, tilt_angle_cos));
+        
+    float rot_angle= 0.7 * iTime;
+    float c= cos(rot_angle);
+    float s= sin(rot_angle);
+
+    mat3 timed_rotate_mat= mat3(
+        vec3(c, 0.0, -s),
+        vec3(0.0, 1.0, 0.0),
+        vec3(s, 0.0, c));
+
+    return tilt_mat * timed_rotate_mat;
+}
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     float pix_size= 2.2 / min(iResolution.x, iResolution.y);
@@ -49,8 +71,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     vec3 dir_normalized= normalize(vec3(coord, 1.5));
 
-    vec3 pos= vec3(0.0, 0.0, 0.0);
-    pos.xy+= ( iResolution.xy * 0.5 - iMouse.xy ) * pix_size;
+    vec3 pos= vec3(0.0, 0.0, -5.0);
+    
+    mat3 rotate_mat= CalculateRotationMatrix();
+    dir_normalized= dir_normalized * rotate_mat;
+    pos= pos * rotate_mat;
     
     bool hit= false;
     for( int i= 0; i < g_max_marcging_iterations; ++i )
