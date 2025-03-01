@@ -248,7 +248,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     for( int i= 0; i < g_max_marching_iterations; ++i )
     {
         float dist= DistanceFunction( pos );
-        if( dist <= 0.0 )
+        if( dist <= 1.5 * g_min_marching_step )
         {
             hit= true;
             break;
@@ -269,13 +269,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             DistanceFunction( pos - g_derivative_calculation_delta * vec3(0.0, 0.0, 1.0) ) );
         normal= normalize(normal);
         
-        vec3 shadow_pos= pos + 0.1 * normal;
+        vec3 shadow_pos= pos + g_min_shadow_marching_step * normal;
         bool shadow_hit= false;
         const vec3 sun_dir_normalized= normalize(vec3(1.0, 1.1, -0.3));
         for( int i= 0; i < g_max_shadow_marching_iterations; ++i )
         {
             float dist= DistanceFunction( shadow_pos );
-            if( dist <= 0.0 )
+            if( dist <= 0.75 * g_min_shadow_marching_step )
             {
                 shadow_hit= true;
                 break;
