@@ -221,6 +221,14 @@ vec3 TextureFetch3d( vec3 coord, float smooth_size )
 	return vec3( bit, bit, bit );
 }
 
+float TexturePlanarFetch( vec2 coord, float smooth_size )
+{
+    vec2 tc_mod= abs( fract( coord ) - vec2( 0.5, 0.5 ) );
+    vec2 tc_step= smoothstep( 0.25 - smooth_size, 0.25 + smooth_size, tc_mod );
+
+    return abs( tc_step.x - tc_step.y ) * 0.5 + 0.3;
+}
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     float pix_size= 2.0 / min(iResolution.x, iResolution.y);
@@ -283,11 +291,21 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             
         const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
         
-        const float coord_scale= 1.0 / 8.0;
+        const float coord_scale= 1.0 / 6.0;
             
-        float smooth_size= pix_size * coord_scale * length( pos - cam_pos ) / max( 0.01, abs(dot(dir_normalized, normal)) );
+        float smooth_size= pix_size * length( pos - cam_pos ) / max( 0.01, abs(dot(dir_normalized, normal)) );
 
-        fragColor= vec4( TextureFetch3d(pos * coord_scale, smooth_size) * ( sun_factor * sun_color + sky_factor * sky_color ), 0.0 );
+        const float tc_angle= g_two_pi / 16.0;
+        vec2 tc_axis0_rotated= vec2( pos.x * cos(+tc_angle) - pos.y * sin(+tc_angle), pos.x * sin(+tc_angle) + pos.y * cos(+tc_angle) );
+        vec2 tc_axis1_rotated= vec2( pos.y * cos(-tc_angle) - pos.z * sin(-tc_angle), pos.y * sin(-tc_angle) + pos.z * cos(-tc_angle) );
+        
+        // Triplanar texturing.
+        float tex_value=
+            TexturePlanarFetch( tc_axis0_rotated * coord_scale, smooth_size * coord_scale ) * (normal.z * normal.z) +
+            TexturePlanarFetch( pos.xz * coord_scale, smooth_size * coord_scale ) * (normal.y * normal.y) + 
+            TexturePlanarFetch( tc_axis1_rotated * coord_scale, smooth_size * coord_scale ) * (normal.x * normal.x);
+        
+        fragColor= vec4( vec3( tex_value ) * ( sun_factor * sun_color + sky_factor * sky_color ), 0.0 );
     }
     else
         fragColor= vec4( sky_color, 0.0 );
