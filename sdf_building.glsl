@@ -81,7 +81,7 @@ vec3 TextureFetch3d( vec3 coord, float smooth_size )
 	vec3 tc_step= smoothstep( 0.25 - smooth_size, 0.25 + smooth_size, tc_mod );
 
 	float bit= abs( abs( tc_step.x - tc_step.y ) - tc_step.z );
-	bit= bit * 0.5 + 0.4;
+	bit= bit * 0.5 + 0.3;
 	return vec3( bit, bit, bit );
 }
 
@@ -141,9 +141,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         if(shadow_hit)
             sun_factor= 0.0;
             
-         float smooth_size= length( pos - cam_pos ) * pix_size * 0.1;
+        const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
+        const vec3 sky_color= vec3( 0.7, 0.7, 0.9 );
+            
+        float smooth_size= length( pos - cam_pos ) * pix_size * 0.1;
 
-        fragColor= vec4( (TextureFetch3d(pos  / 64.0, smooth_size) + vec3(0.5, 0.5, 0.5)) * ( sun_factor * 0.6 + 0.4), 0.0 );
+        fragColor= vec4( TextureFetch3d(pos  / 64.0, smooth_size) * ( sun_factor * sun_color + sky_color ), 0.0 );
     }
     else
         fragColor= vec4( 0.0, 0.0, 0.0, 0.0 );
