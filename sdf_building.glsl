@@ -127,9 +127,11 @@ float DistanceFunction( vec3 pos )
     const vec3 entrance_box0_center= vec3( cylinder_radius, ground_level + entrance_box_half_size.y, +5.0 );
     const vec3 entrance_box1_center= vec3( cylinder_radius, ground_level + entrance_box_half_size.y, -5.0 );
 
-    const float cone_angle= 1.52;
-    const vec3 cone_center= vec3( cylinder_radius - cylinder_walls_half_thikness, window0_center.y + 40.0, 0.0 );
-    const float cone_height= 16.0;
+    const float roof_cone_angle= 1.52;
+    const vec3 roof_cone_center= vec3( cylinder_radius - cylinder_walls_half_thikness, window0_center.y + 40.0, 0.0 );
+    const float roof_cone_height= 16.0;
+    const vec3 roof_cone_sphere_center= roof_cone_center - vec3( 0.0, 10.0, 0.0 );
+    const float roof_cone_sphere_radius= 1.5;
   
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
@@ -168,9 +170,11 @@ float DistanceFunction( vec3 pos )
     float column_cylinder_body= opUnion( column_cylinder_body0, column_cylinder_body1 );
     float column_cylinder= opIntersection( trimming_cylinder_top, column_cylinder_body );
     
-    float cone= sdCone( pos_within_sector - cone_center, vec2( cos(cone_angle), sin(cone_angle) ), cone_height );
+    float roof_cone= sdCone( pos_within_sector - roof_cone_center, vec2( cos(roof_cone_angle), sin(roof_cone_angle) ), roof_cone_height );
+    float roof_cone_sphere= sdSphere( pos_within_sector - roof_cone_sphere_center, roof_cone_sphere_radius );
+    float roof_cone_total= opUnion( roof_cone, roof_cone_sphere );
     
-    float additive_res= opUnion( opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, trimming_cylinder ) ) ), cone );
+    float additive_res= opUnion( opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, trimming_cylinder ) ) ), roof_cone_total );
     
     return opSubtraction( additive_res, opUnion( opUnion( window0, window1 ),opUnion( window2, entrance_box ) ) );
 }
@@ -209,12 +213,12 @@ vec3 TextureFetch3d( vec3 coord, float smooth_size )
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    float pix_size= 2.2 / min(iResolution.x, iResolution.y);
+    float pix_size= 2.0 / min(iResolution.x, iResolution.y);
     vec2 coord= ( fragCoord.xy - iResolution.xy * 0.5 ) * pix_size;
 
     vec3 dir_normalized= normalize(vec3(coord, 1.5));
 
-    vec3 cam_pos= vec3(0.0, 0.0, -256.0);
+    vec3 cam_pos= vec3(0.0, 0.0, -240.0);
     
     mat3 rotate_mat= CalculateRotationMatrix();
     dir_normalized= dir_normalized * rotate_mat;
