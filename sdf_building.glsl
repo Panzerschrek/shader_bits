@@ -56,6 +56,10 @@ float DistanceFunction( vec3 pos )
     // From -0.5 to 0.5
     float angle_within_sector= (fract( atan(pos.z, pos.x) / sector_scale ) - 0.5) * sector_scale;
     
+    const float half_sector_angle= g_two_pi * 0.5 / float(num_sectors);
+    const float half_sector_angle_cos= cos(half_sector_angle);
+    const float half_sector_angle_sin= sin(half_sector_angle);
+    
     vec3 pos_within_sector= vec3( cos(angle_within_sector) * sector_radius, pos.y, sin(angle_within_sector) * sector_radius );
         
     const float cylinder_height= 128.0;
@@ -70,6 +74,10 @@ float DistanceFunction( vec3 pos )
     const vec3 window_box_center= vec3( cylinder_radius, window_center.y - window_box_half_height, 0.0 );
     const float floor_cylinder_start_height= window_center.y + window_radius + 2.0;
     const float floor_cylinder_end_height= floor_cylinder_start_height + 4.0;
+    const float column_cylinder_radius= 3.0;
+    const vec3 column_cylinder_pos0= vec3( cylinder_radius * half_sector_angle_cos, 0.0, +cylinder_radius * half_sector_angle_sin );
+    const vec3 column_cylinder_pos1= vec3( cylinder_radius * half_sector_angle_cos, 0.0, -cylinder_radius * half_sector_angle_sin );
+    
     
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
@@ -85,7 +93,12 @@ float DistanceFunction( vec3 pos )
     float floor_cylinder_borders= max( -sdHorizontalPlane( pos, floor_cylinder_start_height ), sdHorizontalPlane( pos, floor_cylinder_end_height ) );
     float floor_cylinder= max( floor_cylinder_body, floor_cylinder_borders );
     
-    float additive_res= min( ground_plane, min( cylinder, floor_cylinder ) );
+    float column_cylinder_body0= sdYInfiniteCylinder( pos_within_sector - column_cylinder_pos0, column_cylinder_radius );
+    float column_cylinder_body1= sdYInfiniteCylinder( pos_within_sector - column_cylinder_pos1, column_cylinder_radius );
+    float column_cylinder_body= min( column_cylinder_body0, column_cylinder_body1 );
+    float column_cylinder= max( cylinder_top, column_cylinder_body );
+    
+    float additive_res= min( ground_plane, min( column_cylinder, min( cylinder, floor_cylinder ) ) );
     
     return max( additive_res, -window );
 }
