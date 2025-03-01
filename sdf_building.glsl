@@ -65,7 +65,7 @@ float opSubtraction( float d1, float d2 )
 
 float DistanceFunction( vec3 pos )
 {
-    const int num_sectors= 20;
+    const int num_sectors= 24;
     const float sector_scale = g_two_pi / float(num_sectors);
     float sector_radius= length( pos.xz );
     // From -0.5 to 0.5
@@ -77,28 +77,53 @@ float DistanceFunction( vec3 pos )
     
     vec3 pos_within_sector= vec3( cos(angle_within_sector) * sector_radius, pos.y, sin(angle_within_sector) * sector_radius );
         
-    const float cylinder_height= 128.0;
-    const float ground_level= -0.5 * cylinder_height;
-    const float window_radius= 14.0;
+    
+    const float cylinder_height= 140.0;
+    const float ground_level= -40.0;
     const float cylinder_radius= 128.0;
     const float cylinder_walls_half_thikness= 6.0;
     const float floor_cylinder_walls_half_thikness= 9.0;
-    const vec3 window_center= vec3( 0.0, 35.0, 0.0 );
-    const float window_box_half_height= 10.0;
-    const float window_box_half_depth= cylinder_walls_half_thikness * 4.0;
-    const vec3 window_box_center= vec3( cylinder_radius, window_center.y - window_box_half_height, 0.0 );
-    const float floor_cylinder_start_height= window_center.y + window_radius + 2.0;
+    const float window0_radius= 12.0;
+    const vec3 window0_center= vec3( 0.0, 78.0, 0.0 );
+    const float window0_box_half_height= 8.0;
+    const float window0_box_half_depth= cylinder_walls_half_thikness * 4.0;
+    const vec3 window0_box_center= vec3( cylinder_radius, window0_center.y - window0_box_half_height, 0.0 );
+    const float floor_cylinder_start_height= window0_center.y + window0_radius + 2.0;
     const float floor_cylinder_end_height= floor_cylinder_start_height + 4.0;
-    const float column_cylinder_radius= 3.0;
+    const float column_cylinder_radius= 2.0;
     const vec3 column_cylinder_pos0= vec3( cylinder_radius * half_sector_angle_cos, 0.0, +cylinder_radius * half_sector_angle_sin );
     const vec3 column_cylinder_pos1= vec3( cylinder_radius * half_sector_angle_cos, 0.0, -cylinder_radius * half_sector_angle_sin );
     
+    const float window1_radius= 10.0;
+    const vec3 window1_center= vec3( 0.0, window0_center.y - 36.0, 0.0 );
+    const float window1_box_half_height= 7.0;
+    const float window1_box_half_depth= cylinder_walls_half_thikness * 4.0;
+    const vec3 window1_box_center= vec3( cylinder_radius, window1_center.y - window1_box_half_height, 0.0 );
+  
+  
+    const float window2_radius= 8.0;
+    const vec3 window2_center= vec3( 0.0, window1_center.y - 32.0, 0.0 );
+    const float window2_box_half_height= 6.0;
+    const float window2_box_half_depth= cylinder_walls_half_thikness * 4.0;
+    const vec3 window2_box_center= vec3( cylinder_radius, window2_center.y - window2_box_half_height, 0.0 );
+  
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
-    float window_round= sdXInfiniteCylinder( pos_within_sector - window_center, window_radius );
-    float window_box= sdBox( pos_within_sector - window_box_center, vec3( window_box_half_depth, window_box_half_height, window_radius ) );
-    float window= opUnion( window_round, window_box);
+    float window0=
+        opUnion(
+            sdXInfiniteCylinder( pos_within_sector - window0_center, window0_radius ),
+            sdBox( pos_within_sector - window0_box_center, vec3( window0_box_half_depth, window0_box_half_height, window0_radius ) ) );
     
+    float window1=
+        opUnion(
+            sdXInfiniteCylinder( pos_within_sector - window1_center, window1_radius ),
+            sdBox( pos_within_sector - window1_box_center, vec3( window1_box_half_depth, window1_box_half_height, window1_radius ) ) );
+    
+    float window2=
+        opUnion(
+            sdXInfiniteCylinder( pos_within_sector - window2_center, window2_radius ),
+            sdBox( pos_within_sector - window2_box_center, vec3( window2_box_half_depth, window2_box_half_height, window2_radius ) ) );
+       
     float cylinder_body= sdYInfiniteHollowCylinder( pos, cylinder_radius - cylinder_walls_half_thikness, cylinder_walls_half_thikness );
     float cylinder_top= sdHorizontalPlane( pos, ground_level + cylinder_height );
     float cylinder= opIntersection( cylinder_top, cylinder_body );
@@ -114,12 +139,12 @@ float DistanceFunction( vec3 pos )
     
     float additive_res= opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, floor_cylinder ) ) );
     
-    return opSubtraction( additive_res, window );
+    return opSubtraction( additive_res, opUnion( opUnion( window0, window1 ), window2 ) );
 }
 
 mat3 CalculateRotationMatrix()
 {
-    const float tilt_angle= 0.5;
+    const float tilt_angle= 0.45;
     const float tilt_angle_cos= cos(tilt_angle);
     const float tilt_angle_sin= sin(tilt_angle);
     const mat3 tilt_mat= mat3(
