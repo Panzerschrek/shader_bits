@@ -233,13 +233,12 @@ float CheckerboardTextureModulate( float val )
 	return val * 0.4 + 0.4;
 }
 
-vec3 ProcessRay( vec2 coord, float pix_size )
+vec3 ProcessRay( vec2 coord, float pix_size, mat3 rotate_mat )
 {
 	vec3 dir_normalized= normalize(vec3(coord, 1.5));
 
 	vec3 cam_pos= vec3(0.0, 0.0, -250.0);
 
-	mat3 rotate_mat= CalculateRotationMatrix();
 	dir_normalized= dir_normalized * rotate_mat;
 	cam_pos= cam_pos * rotate_mat;
 
@@ -318,12 +317,14 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
 	float pix_size= 2.0 / min(iResolution.x, iResolution.y);
 
+	mat3 rotate_mat= CalculateRotationMatrix();
+
 	vec3 color= vec3( 0.0, 0.0, 0.0 );
 	for( int dx= 0; dx < ss_level; ++dx )
 	for( int dy= 0; dy < ss_level; ++dy )
 	{
 		vec2 coord= ( fragCoord.xy + vec2( float(dx), float(dy) ) / float(ss_level) - iResolution.xy * 0.5 ) * pix_size;
-		color+= ProcessRay( coord, pix_size / float(ss_level) );
+		color+= ProcessRay( coord, pix_size / float(ss_level), rotate_mat );
 	}
 
 	fragColor= vec4( color / float( ss_level * ss_level ), 0.0 );
