@@ -1,5 +1,7 @@
 const float g_two_pi= 2.0 * 3.1415926535;
 
+const int ss_level= 2;
+
 const float g_min_marching_step= 0.08;
 const int g_max_marching_iterations= 256;
 const float g_min_shadow_marching_step= g_min_marching_step * 2.0;
@@ -231,11 +233,8 @@ float CheckerboardTextureModulate( float val )
 	return val * 0.4 + 0.4;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+vec3 ProcessRay( vec2 coord, float pix_size )
 {
-	float pix_size= 2.0 / min(iResolution.x, iResolution.y);
-	vec2 coord= ( fragCoord.xy - iResolution.xy * 0.5 ) * pix_size;
-
 	vec3 dir_normalized= normalize(vec3(coord, 1.5));
 
 	vec3 cam_pos= vec3(0.0, 0.0, -250.0);
@@ -309,8 +308,23 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 		tex_value= CheckerboardTextureModulate( tex_value );
 		
-		fragColor= vec4( vec3( tex_value ) * light_color, 0.0 );
+		return vec3( tex_value ) * light_color;
 	}
 	else
-		fragColor= vec4( sky_color, 0.0 );
+		return sky_color;
+}
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+	float pix_size= 2.0 / min(iResolution.x, iResolution.y);
+
+	vec3 color= vec3( 0.0, 0.0, 0.0 );
+	for( int dx= 0; dx < ss_level; ++dx )
+	for( int dy= 0; dy < ss_level; ++dy )
+	{
+		vec2 coord= ( fragCoord.xy + vec2( float(dx), float(dy) ) / float(ss_level) - iResolution.xy * 0.5 ) * pix_size;
+		color+= ProcessRay( coord, pix_size );
+	}
+
+	fragColor= vec4( color / float( ss_level * ss_level ), 0.0 );
 }
