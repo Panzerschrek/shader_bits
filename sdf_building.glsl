@@ -6,6 +6,14 @@ const float g_min_shadow_marching_step= g_min_marching_step * 2.0;
 const int g_max_shadow_marching_iterations= g_max_marching_iterations / 2;
 const float g_derivative_calculation_delta= 0.02;
 
+const float max_distance= 500.0;
+const vec3 sun_dir_normalized= normalize(vec3(1.0, 1.1, -0.3));
+
+const vec3 sky_color= vec3( 0.7, 0.7, 0.9 );
+const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
+
+const float tex_coord_scale= 1.0 / 6.0;
+
 float sdSphere( vec3 p, float s )
 {
   return length(p)-s;
@@ -216,22 +224,12 @@ mat3 CalculateRotationMatrix()
     return tilt_mat * timed_rotate_mat;
 }
 
-vec3 TextureFetch3d( vec3 coord, float smooth_size )
-{
-	vec3 tc_mod= abs( fract( coord ) - vec3( 0.5, 0.5, 0.5 ) );
-	vec3 tc_step= smoothstep( 0.25 - smooth_size, 0.25 + smooth_size, tc_mod );
-
-	float bit= abs( abs( tc_step.x - tc_step.y ) - tc_step.z );
-	bit= bit * 0.5 + 0.3;
-	return vec3( bit, bit, bit );
-}
-
 float TexturePlanarFetch( vec2 coord, float smooth_size )
 {
     vec2 tc_mod= abs( fract( coord ) - vec2( 0.5, 0.5 ) );
     vec2 tc_step= smoothstep( 0.25 - smooth_size, 0.25 + smooth_size, tc_mod );
 
-    return abs( tc_step.x - tc_step.y ) * 0.5 + 0.3;
+    return abs( tc_step.x - tc_step.y ) * 0.4 + 0.4;
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -247,22 +245,25 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     dir_normalized= dir_normalized * rotate_mat;
     cam_pos= cam_pos * rotate_mat;
     
-    vec3 pos = cam_pos;
+    float distance_traced= 0.0;
+    vec3 pos= cam_pos;
     
     bool hit= false;
+        
     for( int i= 0; i < g_max_marching_iterations; ++i )
     {
+        pos= cam_pos + dir_normalized * distance_traced;
         float dist= DistanceFunction( pos );
         if( dist <= 1.5 * g_min_marching_step )
         {
             hit= true;
             break;
         }
-        pos+= dir_normalized * max(g_min_marching_step, dist);
+        distance_traced+= max(g_min_marching_step, dist);
+        if( distance_traced > max_distance )
+            break;
     }
     
-    const vec3 sky_color= vec3( 0.7, 0.7, 0.9 );
-
     if(hit)
     {
         vec3 normal= vec3(
@@ -274,30 +275,29 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             DistanceFunction( pos - g_derivative_calculation_delta * vec3(0.0, 0.0, 1.0) ) );
         normal= normalize(normal);
         
+
+        float sun_factor= max(0.0, dot(normal, sun_dir_normalized));
+        
         vec3 shadow_pos= pos + g_min_shadow_marching_step * normal;
-        bool shadow_hit= false;
-        const vec3 sun_dir_normalized= normalize(vec3(1.0, 1.1, -0.3));
+        
+        float shadow_distance_traced= 0.0;
         for( int i= 0; i < g_max_shadow_marching_iterations; ++i )
         {
-            float dist= DistanceFunction( shadow_pos );
+            
+            float dist= DistanceFunction( shadow_pos + shadow_distance_traced * sun_dir_normalized );
             if( dist <= 0.75 * g_min_shadow_marching_step )
             {
-                shadow_hit= true;
+                sun_factor= 0.0;
                 break;
             }
-            shadow_pos+= sun_dir_normalized * max(g_min_shadow_marching_step, dist);
+            shadow_distance_traced+= max(g_min_shadow_marching_step, dist);
+            if(shadow_distance_traced > max_distance )
+                break;
         }
         
-        float sun_factor= max(0.0, dot(normal, sun_dir_normalized));
-        if(shadow_hit)
-            sun_factor= 0.0;
             
         float sky_factor= normal.y * 0.35 + 0.65;
-            
-        const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
-        
-        const float coord_scale= 1.0 / 6.0;
-            
+                        
         float smooth_size= pix_size * length( pos - cam_pos ) / max( 0.01, abs(dot(dir_normalized, normal)) );
 
         const float tc_angle= g_two_pi / 16.0;
@@ -306,9 +306,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         
         // Triplanar texturing.
         float tex_value=
-            TexturePlanarFetch( tc_axis0_rotated * coord_scale, smooth_size * coord_scale ) * (normal.z * normal.z) +
-            TexturePlanarFetch( pos.xz * coord_scale, smooth_size * coord_scale ) * (normal.y * normal.y) + 
-            TexturePlanarFetch( tc_axis1_rotated * coord_scale, smooth_size * coord_scale ) * (normal.x * normal.x);
+            TexturePlanarFetch( tc_axis0_rotated * tex_coord_scale, smooth_size * tex_coord_scale ) * (normal.z * normal.z) +
+            TexturePlanarFetch( pos.xz * tex_coord_scale, smooth_size * tex_coord_scale ) * (normal.y * normal.y) + 
+            TexturePlanarFetch( tc_axis1_rotated * tex_coord_scale, smooth_size * tex_coord_scale ) * (normal.x * normal.x);
         
         fragColor= vec4( vec3( tex_value ) * ( sun_factor * sun_color + sky_factor * sky_color ), 0.0 );
     }
