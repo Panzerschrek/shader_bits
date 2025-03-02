@@ -1,12 +1,20 @@
+//
+// This shader uses some functions from this article: https://iquilezles.org/articles/distfunctions/ by Inigo Quilez.
+//
+
 const float g_two_pi= 2.0 * 3.1415926535;
 
+// Supersampling level. 1 - no supersampling, 2 - use 2x2 samples, etc.
 const int ss_level= 2;
 
+// Macrching settings.
 const float g_min_marching_step= 0.08;
 const int g_max_marching_iterations= 256;
 const float g_min_shadow_marching_step= g_min_marching_step * 2.0;
 const int g_max_shadow_marching_iterations= g_max_marching_iterations / 2;
 const float g_derivative_calculation_delta= 0.02;
+
+// Some properties.
 
 const float max_distance= 500.0;
 const vec3 sun_dir_normalized= normalize(vec3(1.0, 1.1, -0.3));
@@ -16,6 +24,8 @@ const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
 
 const float tc_scale= 1.0 / 4.0;
 const float tc_angle= g_two_pi / 16.0;
+
+// SDF functions.
 
 float sdSphere( vec3 p, float radius )
 {
@@ -77,6 +87,8 @@ float opSubtraction( float d0, float d1 )
 {
 	return opIntersection( d0, -d1 );
 }
+
+// Main SDF function.
 
 float DistanceFunction( vec3 pos )
 {
@@ -198,6 +210,8 @@ float DistanceFunction( vec3 pos )
 	return opUnion( opUnion( seats, building ), opUnion( ground_plane, entrance_torus ) );
 }
 
+// Some helpers.
+
 mat3 CalculateRotationMatrix()
 {
 	const float tilt_angle= 0.4;
@@ -233,6 +247,7 @@ float CheckerboardTextureModulate( float val )
 	return val * 0.4 + 0.4;
 }
 
+// Function for scene tracing and result color calculation.
 vec3 ProcessRay( vec2 coord, float pix_size, mat3 rotate_mat )
 {
 	vec3 dir_normalized= normalize(vec3(coord, 1.5));
@@ -313,6 +328,7 @@ vec3 ProcessRay( vec2 coord, float pix_size, mat3 rotate_mat )
 		return sky_color;
 }
 
+// Entry point, responsibel for supersampling.
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
 	float pix_size= 2.0 / min(iResolution.x, iResolution.y);
