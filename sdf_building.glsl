@@ -12,7 +12,8 @@ const vec3 sun_dir_normalized= normalize(vec3(1.0, 1.1, -0.3));
 const vec3 sky_color= vec3( 0.7, 0.7, 0.9 );
 const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
 
-const float tex_coord_scale= 1.0 / 6.0;
+const float tc_scale= 1.0 / 6.0;
+const float tc_angle= g_two_pi / 16.0;
 
 float sdSphere( vec3 p, float s )
 {
@@ -224,12 +225,17 @@ mat3 CalculateRotationMatrix()
     return tilt_mat * timed_rotate_mat;
 }
 
-float TexturePlanarFetch( vec2 coord, float smooth_size )
+float CheckerboardTextureBase( vec2 coord, float smooth_size )
 {
     vec2 tc_mod= abs( fract( coord ) - vec2( 0.5, 0.5 ) );
     vec2 tc_step= smoothstep( 0.25 - smooth_size, 0.25 + smooth_size, tc_mod );
 
-    return abs( tc_step.x - tc_step.y ) * 0.4 + 0.4;
+    return abs( tc_step.x - tc_step.y );
+}
+
+float CheckerboardTextureModulate( float val )
+{
+    return  val * 0.4 + 0.4;
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -295,20 +301,22 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                 break;
         }
         
-            
         float sky_factor= normal.y * 0.35 + 0.65;
                         
-        float smooth_size= pix_size * length( pos - cam_pos ) / max( 0.01, abs(dot(dir_normalized, normal)) );
+        float smooth_size= tc_scale * pix_size * distance_traced / max( 0.01, abs(dot(dir_normalized, normal)) );
 
-        const float tc_angle= g_two_pi / 16.0;
-        vec2 tc_axis0_rotated= vec2( pos.x * cos(+tc_angle) - pos.y * sin(+tc_angle), pos.x * sin(+tc_angle) + pos.y * cos(+tc_angle) );
-        vec2 tc_axis1_rotated= vec2( pos.y * cos(-tc_angle) - pos.z * sin(-tc_angle), pos.y * sin(-tc_angle) + pos.z * cos(-tc_angle) );
+        vec3 tc_base= pos * tc_scale;
+        
+        vec2 tc_axis0_rotated= vec2( tc_base.x * cos(+tc_angle) - tc_base.y * sin(+tc_angle), tc_base.x * sin(+tc_angle) + tc_base.y * cos(+tc_angle) );
+        vec2 tc_axis1_rotated= vec2( tc_base.y * cos(-tc_angle) - tc_base.z * sin(-tc_angle), tc_base.y * sin(-tc_angle) + tc_base.z * cos(-tc_angle) );
         
         // Triplanar texturing.
         float tex_value=
-            TexturePlanarFetch( tc_axis0_rotated * tex_coord_scale, smooth_size * tex_coord_scale ) * (normal.z * normal.z) +
-            TexturePlanarFetch( pos.xz * tex_coord_scale, smooth_size * tex_coord_scale ) * (normal.y * normal.y) + 
-            TexturePlanarFetch( tc_axis1_rotated * tex_coord_scale, smooth_size * tex_coord_scale ) * (normal.x * normal.x);
+            CheckerboardTextureBase( tc_axis0_rotated, smooth_size ) * (normal.z * normal.z) +
+            CheckerboardTextureBase( tc_base.xz, smooth_size ) * (normal.y * normal.y) + 
+            CheckerboardTextureBase( tc_axis1_rotated, smooth_size ) * (normal.x * normal.x);
+        
+        tex_value= CheckerboardTextureModulate( tex_value );
         
         fragColor= vec4( vec3( tex_value ) * ( sun_factor * sun_color + sky_factor * sky_color ), 0.0 );
     }
