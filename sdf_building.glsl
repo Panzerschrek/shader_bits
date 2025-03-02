@@ -14,7 +14,7 @@ const vec3 sun_dir_normalized= normalize(vec3(1.0, 1.1, -0.3));
 const vec3 sky_color= vec3( 0.7, 0.7, 0.9 );
 const vec3 sun_color= vec3( 0.95, 0.9, 0.6 );
 
-const float tc_scale= 1.0 / 6.0;
+const float tc_scale= 1.0 / 4.0;
 const float tc_angle= g_two_pi / 16.0;
 
 float sdSphere( vec3 p, float radius )
@@ -225,7 +225,7 @@ float CheckerboardTextureBase( vec2 coord, float smooth_size )
 	vec2 tc_mod= abs( fract( coord ) - vec2( 0.5, 0.5 ) );
 	vec2 tc_step= smoothstep( 0.25 - smooth_size, 0.25 + smooth_size, tc_mod );
 
-	return abs( tc_step.x - tc_step.y );
+	return ( tc_step.x + tc_step.y ) * 0.5;
 }
 
 float CheckerboardTextureModulate( float val )
@@ -293,7 +293,7 @@ vec3 ProcessRay( vec2 coord, float pix_size )
 		
 		vec3 light_color= sun_factor * sun_color + sky_factor * sky_color;
 
-		float smooth_size= tc_scale * pix_size * distance_traced / max( 0.01, abs(dot(dir_normalized, normal)) );
+		float smooth_size= 0.5 * tc_scale * pix_size * distance_traced / max( 0.01, abs(dot(dir_normalized, normal)) );
 
 		vec3 tc_base= pos * tc_scale;
 		
@@ -323,7 +323,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	for( int dy= 0; dy < ss_level; ++dy )
 	{
 		vec2 coord= ( fragCoord.xy + vec2( float(dx), float(dy) ) / float(ss_level) - iResolution.xy * 0.5 ) * pix_size;
-		color+= ProcessRay( coord, pix_size );
+		color+= ProcessRay( coord, pix_size / float(ss_level) );
 	}
 
 	fragColor= vec4( color / float( ss_level * ss_level ), 0.0 );
