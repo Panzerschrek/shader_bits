@@ -128,6 +128,10 @@ float DistanceFunction( vec3 pos )
     
     const vec3 entrance_torus_center= vec3( cylinder_radius + 20.0, -40.0, 0.0 );
     const vec2 entrance_torus_size= vec2( 20.0, 3.0 );
+    
+    const float seats_cone_angle= 0.65;
+    const float seats_radius= 108.0;
+    const vec3 seats_cone_center= vec3( 0.0, -78.0, 0.0 );
   
     float ground_plane= sdHorizontalPlane( pos, ground_level );
     
@@ -174,16 +178,20 @@ float DistanceFunction( vec3 pos )
     float roof_cone_sphere= sdSphere( pos_within_sector - roof_cone_sphere_center, roof_cone_sphere_radius );
     float roof_cone_total= opUnion( roof_cone, roof_cone_sphere );
     
-    float additive_res= opUnion( opUnion( ground_plane, opUnion( column_cylinder, opUnion( cylinder, trimming_cylinder ) ) ), roof_cone_total );
+    float additive_res= opUnion( opUnion( column_cylinder, opUnion( cylinder, trimming_cylinder ) ), roof_cone_total );
     
     float building= opSubtraction( additive_res, opUnion( opUnion( window0, window1 ),opUnion( window2, entrance_box ) ) );
     
+    float seats_cone= sdCone( -(pos - seats_cone_center), vec2( cos(seats_cone_angle), sin(seats_cone_angle) ) );
+    float seats_cylinder_body= sdYInfiniteCylinder( pos_within_sector - seats_cone_center, seats_radius );
+    float seats= opSubtraction( seats_cylinder_body, seats_cone);
+        
     float entrance_torus= 
         opUnion(
             sdTorus( ( vec3( abs(pos.x), pos.y, pos.z ) - entrance_torus_center ).yxz, entrance_torus_size ),
             sdTorus( ( vec3( abs(pos.z), pos.y, pos.x ) - entrance_torus_center ).yxz, entrance_torus_size ) );
 
-    return opUnion( building, entrance_torus );
+    return opUnion( opUnion( seats, building ), opUnion( ground_plane, entrance_torus ) );
 }
 
 mat3 CalculateRotationMatrix()
