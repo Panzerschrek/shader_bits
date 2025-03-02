@@ -11,20 +11,13 @@ float sdSphere( vec3 p, float s )
   return length(p)-s;
 }
 
-float sdCone( vec3 p, vec2 c, float h )
+float sdCone( vec3 p, vec2 c )
 {
-  // c is the sin/cos of the angle, h is height
-  // Alternatively pass q instead of (c,h),
-  // which is the point at the base in 2D
-  vec2 q = h*vec2(c.x/c.y,-1.0);
-    
-  vec2 w = vec2( length(p.xz), p.y );
-  vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
-  vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
-  float k = sign( q.y );
-  float d = min(dot( a, a ),dot(b, b));
-  float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
-  return sqrt(d)*sign(s);
+  
+  float u= length(p.xz);
+  float v= p.y;
+  
+  return u * c.y + v * c.x;
 }
 
 float sdBox( vec3 p, vec3 b )
@@ -173,7 +166,11 @@ float DistanceFunction( vec3 pos )
     float column_cylinder_body= opUnion( column_cylinder_body0, column_cylinder_body1 );
     float column_cylinder= opIntersection( trimming_cylinder_top, column_cylinder_body );
     
-    float roof_cone= sdCone( pos_within_sector - roof_cone_center, vec2( cos(roof_cone_angle), sin(roof_cone_angle) ), roof_cone_height );
+    float roof_cone= 
+        opSubtraction(
+            sdCone( pos_within_sector - roof_cone_center, vec2( cos(roof_cone_angle), sin(roof_cone_angle) ) ),
+            sdHorizontalPlane( pos_within_sector - roof_cone_center, -roof_cone_height ) );
+            
     float roof_cone_sphere= sdSphere( pos_within_sector - roof_cone_sphere_center, roof_cone_sphere_radius );
     float roof_cone_total= opUnion( roof_cone, roof_cone_sphere );
     
