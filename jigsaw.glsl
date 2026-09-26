@@ -30,30 +30,54 @@ void mainImage( out vec4 frag_color, in vec2 frag_coord )
 	vec4 border_rand_y_plus = textureLod( iChannel0, ( cell_coord_integer_centered + vec2( 0.0, 1.0 ) ) / texture_size, 0.0 );
 	vec4 border_rand_y_minus= textureLod( iChannel0, ( cell_coord_integer_centered + vec2( 0.0, 0.0 ) ) / texture_size, 0.0 );
 
+	float border_size= 0.05;
+
+	float border_factor_x_plus = 1.0 - smoothstep( 1.0 - border_size, 1.0, coord_within_cell.x );
+	float border_factor_x_minus= smoothstep( 0.0, border_size, coord_within_cell.x );
+	float border_factor_y_plus = 1.0 - smoothstep( 1.0 - border_size, 1.0, coord_within_cell.y );
+	float border_factor_y_minus= smoothstep( 0.0, border_size, coord_within_cell.y );
+
 	if( border_rand_x_plus .a >  0.5 )
 	{
 		vec3 params= GetCircleParams( border_rand_x_plus .xyz );
-		vec2 vec_to_circle_center= coord_within_cell - vec2( 1.0 - params.y, params.x );
-		cell_coord_tweaked.x+= step( length( vec_to_circle_center ), params.z );
+		float l= length( coord_within_cell - vec2( 1.0 - params.y, params.x ) );
+		float s= step( l, params.z );
+		cell_coord_tweaked.x+= s;
+		border_factor_x_plus = min( border_factor_x_plus , smoothstep( params.z, params.z + border_size, l ) );
+		border_factor_x_plus = mix( border_factor_x_plus , 1.0 - smoothstep( params.z - border_size, params.z, l ), s );
 	}
 	if( border_rand_x_minus.a <= 0.5 )
 	{
 		vec3 params= GetCircleParams( border_rand_x_minus.xyz );
-		vec2 vec_to_circle_center= coord_within_cell - params.yx;
-		cell_coord_tweaked.x-= step( length( vec_to_circle_center ), params.z );
+		float l= length( coord_within_cell - params.yx );
+		float s= step( l, params.z );
+		cell_coord_tweaked.x-= s;
+		border_factor_x_minus= min( border_factor_x_minus, smoothstep( params.z, params.z + border_size, l ) );
+		border_factor_x_minus= mix( border_factor_x_minus, 1.0 - smoothstep( params.z - border_size, params.z, l ), s );
 	}
 	if( border_rand_y_plus. a >  0.5 )
 	{
 		vec3 params= GetCircleParams( border_rand_y_plus .xyz );
-		vec2 vec_to_circle_center= coord_within_cell - vec2( params.x, 1.0 - params.y );
-		cell_coord_tweaked.y+= step( length( vec_to_circle_center ), params.z );
+		float l= length( coord_within_cell - vec2( params.x, 1.0 - params.y ) );
+		float s= step( l, params.z );
+		cell_coord_tweaked.y+= s;
+		border_factor_y_plus = min( border_factor_y_plus , smoothstep( params.z, params.z + border_size, l ) );
+		border_factor_y_plus = mix( border_factor_y_plus , 1.0 - smoothstep( params.z - border_size, params.z, l ), s );
 	}
 	if( border_rand_y_minus.a <= 0.5 )
 	{
 		vec3 params= GetCircleParams( border_rand_y_minus.xyz );
-		vec2 vec_to_circle_center= coord_within_cell - params.xy;
-		cell_coord_tweaked.y-= step( length( vec_to_circle_center ), params.z );
+		float l= length( coord_within_cell - params.xy );
+		float s= step( l, params.z );
+		cell_coord_tweaked.y-= s;
+		border_factor_y_minus= min( border_factor_y_minus, smoothstep( params.z, params.z + border_size, l ) );
+		border_factor_y_minus= mix( border_factor_y_minus, 1.0 - smoothstep( params.z - border_size, params.z, l ), s );
 	}
 
-	frag_color= textureLod( iChannel0, cell_coord_tweaked / texture_size, 0.0 );
+	float border_factor=
+		0.5 + 0.5 *
+			border_factor_x_plus * border_factor_x_minus *
+			border_factor_y_plus * border_factor_y_minus;
+
+	frag_color= border_factor * textureLod( iChannel0, cell_coord_tweaked / texture_size, 0.0 );
 }
