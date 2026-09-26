@@ -15,8 +15,8 @@ void mainImage( out vec4 frag_color, in vec2 frag_coord )
 
 	vec2 cell_coord= c_scale * frag_coord / max( iResolution.x, iResolution.y );
 
-	vec4 line_offset_x= textureLod( iChannel0, vec2( cell_coord.y * 0.5, 0.0 ) / texture_size, 0.0 );
-	vec4 line_offset_y= textureLod( iChannel0, vec2( 0.0, cell_coord.x * 0.5 ) / texture_size, 0.0 );
+	vec4 line_offset_x= textureLod( iChannel0, cell_coord.yx * 0.5 / texture_size, 0.0 );
+	vec4 line_offset_y= textureLod( iChannel0, cell_coord.xy * 0.5 / texture_size, 0.0 );
 
 	cell_coord+= 0.25 * vec2( line_offset_x.a, line_offset_y.a );
 
