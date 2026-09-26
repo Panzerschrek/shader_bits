@@ -75,9 +75,9 @@ void mainImage( out vec4 frag_color, in vec2 frag_coord )
 	}
 
 	float border_factor=
-		0.5 + 0.5 *
-			border_factor_x_plus * border_factor_x_minus *
-			border_factor_y_plus * border_factor_y_minus;
+		0.5 + 0.5 * min(
+			min( border_factor_x_plus, border_factor_x_minus ),
+			min( border_factor_y_plus, border_factor_y_minus ) );
 
 	frag_color= border_factor * textureLod( iChannel0, cell_coord_tweaked / texture_size, 0.0 );
 }
