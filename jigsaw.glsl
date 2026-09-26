@@ -12,9 +12,12 @@ vec3 GetCircleParams( vec3 rand )
 
 void mainImage( out vec4 frag_color, in vec2 frag_coord )
 {
+	vec2 base_coord= frag_coord / max( iResolution.x, iResolution.y );
+	vec2 cell_coord= c_scale * base_coord;
+
 	vec2 texture_size= vec2( textureSize( iChannel0, 0 ) );
 
-	vec2 cell_coord= c_scale * frag_coord / max( iResolution.x, iResolution.y );
+
 
 	vec4 line_offset_x= textureLod( iChannel0, cell_coord.yx * 0.5 / texture_size, 0.0 );
 	vec4 line_offset_y= textureLod( iChannel0, cell_coord.xy * 0.5 / texture_size, 0.0 );
@@ -107,5 +110,7 @@ void mainImage( out vec4 frag_color, in vec2 frag_coord )
 			min( border_factor_x_plus, border_factor_x_minus ),
 			min( border_factor_y_plus, border_factor_y_minus ) );
 
-	frag_color= border_factor * textureLod( iChannel0, cell_coord_tweaked / texture_size, 0.0 );
+	frag_color=
+		border_factor *
+		textureLod( iChannel0, cell_coord_tweaked / texture_size, 0.0 );
 }
