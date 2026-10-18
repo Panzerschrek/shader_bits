@@ -29,13 +29,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	float triangle_tan= tan( triangle_angle );
 	float triangle_border= sqrt( 1.0 + triangle_tan * triangle_tan );
 
+	float triangle_border_rotated= sqrt( 1.0 + 1.0 / ( triangle_tan * triangle_tan ) );
+
 	float ring_outer_factor= step( radius, hex_border * ring_outer_radius );
 	float ring_factor=
 		step( hex_border * ring_inner_radius, radius ) *
 		step( triangle_angle, 0.0 );
 
-	float cross_half_width= ring_width * 0.5 / radius;
-	float cross_base_factor= step( -cross_half_width, triangle_angle ) * step( triangle_angle, cross_half_width );
+	float cross_half_width= ring_width * 0.5;
+	float cross_base_factor= step( radius, triangle_border_rotated * cross_half_width );
 
 	float cross_factor_combined= ring_outer_factor * max( ring_factor, cross_base_factor );
 
