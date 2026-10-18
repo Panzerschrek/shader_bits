@@ -1,6 +1,8 @@
 float c_scale= 16.0;
 float c_border_size= 0.035;
 
+int ss_scale= 2;
+
 vec3 GetCircleParams( vec3 rand )
 {
 	return
@@ -10,14 +12,11 @@ vec3 GetCircleParams( vec3 rand )
 			0.15 * ( 0.9 + rand.x * 0.2 ) );
 }
 
-void mainImage( out vec4 frag_color, in vec2 frag_coord )
+vec4 GetPuzzleColor( vec2 base_coord )
 {
-	vec2 base_coord= frag_coord / max( iResolution.x, iResolution.y );
 	vec2 cell_coord= c_scale * base_coord;
 
 	vec2 texture_size= vec2( textureSize( iChannel0, 0 ) );
-
-
 
 	vec4 line_offset_x= textureLod( iChannel0, cell_coord.yx * 0.5 / texture_size, 0.0 );
 	vec4 line_offset_y= textureLod( iChannel0, cell_coord.xy * 0.5 / texture_size, 0.0 );
@@ -110,7 +109,23 @@ void mainImage( out vec4 frag_color, in vec2 frag_coord )
 			min( border_factor_x_plus, border_factor_x_minus ),
 			min( border_factor_y_plus, border_factor_y_minus ) );
 
-	frag_color=
+	return
 		border_factor *
 		textureLod( iChannel0, cell_coord_tweaked / texture_size, 0.0 );
+}
+
+void mainImage( out vec4 frag_color, in vec2 frag_coord )
+{
+	vec4 color_sum= vec4( 0.0, 0.0, 0.0, 0.0 );
+
+	for( int dy= 0; dy < ss_scale; ++dy )
+	{
+		for( int dx= 0; dx < ss_scale; ++dx )
+		{
+			vec2 base_coord= ( vec2( frag_coord ) + vec2( float(dx), float(dy) ) / float( ss_scale ) ) / max( iResolution.x, iResolution.y );
+			color_sum+= GetPuzzleColor( base_coord );
+		}
+	}
+
+	frag_color= color_sum / float( ss_scale * ss_scale );
 }
