@@ -2,6 +2,7 @@ const float tau= 6.2831853071795864769;
 
 const float triangle_radius= 0.28;
 const float hex_radius= 0.22;
+const float small_triangles_ardius= 0.36;
 
 const float ring_offset= 0.04;
 const float ring_width= 0.04;
@@ -41,7 +42,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 	float cross_factor_combined= ring_outer_factor * max( ring_factor, cross_base_factor );
 
-	vec4 flag_color= mix( mix( hex_color, cross_color, cross_factor_combined ), triangle_color, step( hex_radius * hex_border, radius ) );
+	float small_triangles_factor= 1.0 - step( radius, triangle_border * hex_radius ) * step( hex_border * small_triangles_ardius, radius );
+
+	vec4 flag_color= mix( mix( hex_color, cross_color, cross_factor_combined ), triangle_color, min( step( hex_radius * hex_border, radius ), small_triangles_factor ) );
 
 	fragColor = mix( flag_color, background_color, step( triangle_radius * triangle_border, radius ) );
 }
