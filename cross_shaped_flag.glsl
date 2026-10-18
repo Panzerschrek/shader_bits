@@ -14,12 +14,10 @@ const vec4 hex_color= vec4( 0.05, 0.05, 0.05, 1.0 );
 const vec4 cross_color= vec4( 0.9, 0.1, 0.1, 1.0 );
 const vec4 background_color= vec4( 1.0, 1.0, 1.0, 0.0 );
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+const int ss_scale= 4;
+
+vec4 GetColor( vec2 coord )
 {
-	float pix_size= 1.0 / min(iResolution.x, iResolution.y);
-
-	vec2 coord= ( fragCoord.xy - iResolution.xy * 0.5 ) * pix_size;
-
 	float angle= atan( coord.y, -coord.x );
 	float radius= length( coord );
 
@@ -46,5 +44,23 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 	vec4 flag_color= mix( mix( hex_color, cross_color, cross_factor_combined ), triangle_color, min( step( hex_radius * hex_border, radius ), small_triangles_factor ) );
 
-	fragColor = mix( flag_color, background_color, step( triangle_radius * triangle_border, radius ) );
+	return mix( flag_color, background_color, step( triangle_radius * triangle_border, radius ) );
+}
+
+void mainImage( out vec4 frag_color, in vec2 frag_coord )
+{
+	vec4 color_sum= vec4( 0.0, 0.0, 0.0, 0.0 );
+
+	float pix_size= 1.0 / min( iResolution.x, iResolution.y );
+
+	for( int dy= 0; dy < ss_scale; ++dy )
+	{
+		for( int dx= 0; dx < ss_scale; ++dx )
+		{
+			vec2 coord= ( frag_coord.xy - iResolution.xy * 0.5 + vec2( float(dx), float(dx) ) / float( ss_scale ) ) * pix_size;
+			color_sum+= GetColor( coord );
+		}
+	}
+
+	frag_color= color_sum / float( ss_scale * ss_scale );
 }
