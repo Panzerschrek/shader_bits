@@ -18,7 +18,7 @@ const int ss_scale= 4;
 
 vec4 GetColor( vec2 coord )
 {
-	float angle= atan( coord.y, -coord.x );
+	float angle= atan( coord.y, -coord.x ) + iTime / 16.0;
 	float radius= length( coord );
 
 	float hex_tan= tan( mod( angle + tau / 12.0, tau / 6.0 ) - tau / 12.0 );
@@ -51,7 +51,7 @@ void mainImage( out vec4 frag_color, in vec2 frag_coord )
 {
 	vec4 color_sum= vec4( 0.0, 0.0, 0.0, 0.0 );
 
-	float pix_size= 1.0 / min( iResolution.x, iResolution.y );
+	float pix_size= triangle_radius * 4.5 / min( iResolution.x, iResolution.y );
 
 	for( int dy= 0; dy < ss_scale; ++dy )
 	{
